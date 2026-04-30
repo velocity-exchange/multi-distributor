@@ -21,17 +21,17 @@ pub mod instructions;
 pub mod state;
 use solana_security_txt::security_txt;
 
-declare_id!("E7HtfkEMhmn9uwL7EFNydcXBWy5WCYN1vFmKKjipEH1x");
+declare_id!("1nsGCPcgK7RcrZXzxP1BJMBnm1FRGf9ezjqMPYdgCkF");
 
 security_txt! {
     // Required fields
-    name: "Merkle Distributor",
-    project_url: "https://jup.ag/",
-    contacts: "email:feedback.raccoons.dev",
-    policy: "https://github.com/jup-ag/distributor",
+    name: "Drift Insurance Fund Claims",
+    project_url: "https://www.drift.trade/",
+    contacts: "email:security@drift.trade",
+    policy: "https://github.com/drift-labs",
     // Optional Fields
     preferred_languages: "en",
-    source_code: "https://github.com/jup-ag/distributor"
+    source_code: "https://github.com/drift-labs/if-claim-program"
 }
 
 #[program]
