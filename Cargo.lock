@@ -1432,7 +1432,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "drift-airdrop-api"
+name = "drift-if-claim-api"
 version = "0.0.1"
 dependencies = [
  "anchor-lang",
@@ -2083,6 +2083,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9007da9cacbd3e6343da136e98b0d2df013f553d35bdec8b518f07bea768e19c"
 
 [[package]]
+name = "if-claim-cli"
+version = "0.0.1"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "bincode",
+ "clap 3.2.25",
+ "csv",
+ "jito-merkle-tree",
+ "merkle-distributor",
+ "rand 0.7.3",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "solana-program",
+ "solana-rpc-client",
+ "solana-sdk",
+ "spl-associated-token-account 2.2.0",
+ "spl-token 3.5.0",
+ "zip",
+]
+
+[[package]]
 name = "im"
 version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2225,31 +2250,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
-]
-
-[[package]]
-name = "jup-scripts"
-version = "0.0.1"
-dependencies = [
- "anchor-client",
- "anchor-lang",
- "anchor-spl",
- "anyhow",
- "bincode",
- "clap 3.2.25",
- "csv",
- "jito-merkle-tree",
- "merkle-distributor",
- "rand 0.7.3",
- "reqwest",
- "serde",
- "serde_json",
- "solana-program",
- "solana-rpc-client",
- "solana-sdk",
- "spl-associated-token-account 2.2.0",
- "spl-token 3.5.0",
- "zip",
 ]
 
 [[package]]

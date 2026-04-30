@@ -237,24 +237,14 @@ impl AirdropMerkleTree {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use std::{fs, path::PathBuf};
 
     use solana_program::{pubkey, pubkey::Pubkey};
-    use solana_sdk::{
-        signature::{EncodableKey, Keypair},
-        signer::Signer,
-    };
 
     use super::*;
 
     pub fn new_test_key() -> Pubkey {
-        let kp = Keypair::new();
-        let out_path = format!("./test_keys/{}.json", kp.pubkey());
-
-        kp.write_to_file(out_path)
-            .expect("Failed to write to signer");
-
-        kp.pubkey()
+        Pubkey::new_unique()
     }
 
     fn new_test_merkle_tree(num_nodes: u64, path: &PathBuf, airdrop_version: u64) {
@@ -322,7 +312,10 @@ mod tests {
         ];
 
         let merkle_distributor_info = AirdropMerkleTree::new(tree_nodes, 0).unwrap();
-        let path = PathBuf::from("merkle_tree.json");
+        let path = std::env::temp_dir().join(format!(
+            "merkle_tree_{}.json",
+            Pubkey::new_unique()
+        ));
 
         // serialize merkle distributor to file
         merkle_distributor_info.write_to_file(&path);
@@ -331,11 +324,17 @@ mod tests {
             AirdropMerkleTree::new_from_file(&path).unwrap();
 
         assert_eq!(merkle_distributor_read.tree_nodes.len(), 3);
+        fs::remove_file(path).unwrap();
     }
 
     #[test]
     fn test_new_test_merkle_tree() {
-        new_test_merkle_tree(100, &PathBuf::from("merkle_tree_test_csv.json"), 0);
+        let path = std::env::temp_dir().join(format!(
+            "merkle_tree_test_csv_{}.json",
+            Pubkey::new_unique()
+        ));
+        new_test_merkle_tree(100, &path, 0);
+        fs::remove_file(path).unwrap();
     }
 
     // Test creating a merkle tree from Tree Nodes, where claimants are not unique

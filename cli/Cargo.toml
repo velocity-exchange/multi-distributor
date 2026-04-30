@@ -1,5 +1,5 @@
 [package]
-name = "jup-scripts"
+name = "if-claim-cli"
 version = { workspace = true }
 edition = { workspace = true }
 

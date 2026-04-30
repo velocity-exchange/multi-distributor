@@ -178,7 +178,10 @@ pub fn handle_new_claim(
         .ok_or(ErrorCode::ArithmeticError)?;
 
     require!(
-        distributor.total_amount_claimed + distributor.total_amount_forgone
+        distributor
+            .total_amount_claimed
+            .checked_add(distributor.total_amount_forgone)
+            .ok_or(ErrorCode::ArithmeticError)?
             <= distributor.max_total_claim,
         ErrorCode::ExceededMaxClaim
     );

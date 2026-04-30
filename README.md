@@ -1,66 +1,91 @@
-# Merkle-distributor
+# Drift Insurance Fund Claims
 
-A program and toolsets for distributing tokens efficiently via uploading a [Merkle root](https://en.wikipedia.org/wiki/Merkle_tree).
+A standalone claim program and supporting toolset for distributing recovered Drift Insurance Fund assets through Merkle proofs.
 
-## Sharding merkle tree
+This repo is forked from Merkle distributor tooling and keeps the existing distributor/claim model intact: each claim tree stores a Merkle root, each claimant proves their allocation, and tokens are paid from a program-owned vault.
 
-Thanks Jito for excellent [Merkle-distributor project](https://github.com/jito-foundation/distributor). In Jupiter, We fork the project and add some extra steps to make it works for a large set of addresses.
+## Claim Model
 
-There are issues if the number of airdrop addresses increases:
-- The size of the proof increases, that may be over solana transaction size limit.
-- Too many write locked accounts duration hot claming event, so only some transactions are get through.
+- Create one distributor per asset or market-specific asset bucket.
+- Build leaves at the Drift authority level.
+- For immediate IF withdrawals, set each leaf with `amount_unlocked = full entitlement` and `amount_locked = 0`.
+- Fund each distributor vault with the intended token amount by SPL transfer.
+- Users call `new_claim` once per eligible distributor to withdraw their unlocked amount.
 
-In order to tackle it, we break the large set of addresses to smaller merkle trees, like 12000 addresses for each merkle tree. Therefore, when user claim, that would write lock on different accounts as well as reduces proof size.
-
-Before are follow toolset to build sharding merkle trees
+The vesting fields remain available for compatibility with the original program. For IF claims, use unlocked-only trees and a far-future clawback timestamp.
 
 ## CLI
-Build and deploy sharding merkle trees:
 
-```
-cd cli
+Build sharded Merkle trees, create distributors, fund vaults, and verify setup:
+
+```sh
 cargo build
-../target/debug/cli create-merkle-tree --csv-path [PATH_TO_LARGE_SET_OF_ADDRESS] --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --max-nodes-per-tree 12000
-../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEY_PAIR] --rpc-url [RPC] new-distributor --start-vesting-ts [START_VESTING] --end-vesting-ts [END_VESTING] --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --clawback-start-ts [CLAWBACK_START] --enable-slot [ENABLE_SLOT]
-../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEY_PAIR] --rpc-url [RPC] fund-all --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES]
+target/debug/cli create-merkle-tree --csv-path [CSV_PATH] --merkle-tree-path [MERKLE_TREE_DIR] --max-nodes-per-tree 12000
+target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] new-distributor --start-vesting-ts [START_TS] --end-vesting-ts [END_TS] --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT]
+target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] fund-all --merkle-tree-path [MERKLE_TREE_DIR]
+target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] verify --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
 ```
 
-Anyone can verify the whole setup after that:
+See [MERKLE_TREES.md](MERKLE_TREES.md) for CSV format, amount units, and distributor-version guidance.
 
+## Development With Devcontainer
+
+This repo includes a devcontainer with pinned Rust, Solana, and Anchor versions for program development.
+
+Build the container:
+
+```sh
+cd .devcontainer
+docker build -t if-claim-dev .
 ```
-../target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEY_PAIR] --rpc-url [RPC] verify --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] --clawback-start-ts [CLAWBACK_START] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
+
+Start the devcontainer service:
+
+```sh
+docker compose up -d
+```
+
+Open a shell inside it:
+
+```sh
+docker compose exec if-claim /bin/bash
+```
+
+Alternatively, use your IDE's devcontainer integration. In VS Code or Cursor:
+
+1. Press `Cmd+Shift+P` on macOS, or `Ctrl+Shift+P` elsewhere.
+2. Run `Dev Containers: Reopen in Container`.
+3. Wait for the container to build.
+4. Use the IDE terminal inside the devcontainer.
+
+Common commands:
+
+```sh
+# build program without requiring the deploy keypair
+anchor build --ignore-keys
+
+# build program with keypair check
+mkdir -p target/deploy
+cp /path/to/merkle_distributor-keypair.json target/deploy/merkle_distributor-keypair.json
+anchor build
+
+# update checked-in IDL after build
+cp target/idl/merkle_distributor.json programs/merkle-distributor/idl/merkle_distributor.json
+
+# run Rust tests
+cargo test -p merkle-distributor --lib
+cargo test -p jito-merkle-tree
 ```
 
 ## API
-Axum server under `/api` serves merkle proof for users. We add some more caching functionality and some helpers
-to make it eaier to determine how much a user is eligible to claim.
 
-* API server tries to cache account data locally
-    * calls `getProgramAccounts` for each `Distributor` on startup and saves all `ClaimStatus` accounts
-    * does `programSubscribe` on `ClaimStatus` accounts to update cache in real time
-        * _maybe we should do some smart cache updating based on calls to `/claim`_
-    * cache is backed `dashmap`, each key-value pair is about 180 bytes (excl overhead of structs and DashMap)
-        * 10_000 accounts: 1.8MB
-        * 100_000 accounts: 18MB
-        * 1_000_000 accounts: 180MB
-* endpoints
-    * `GET /distributors` returns `MerkleDistributor` account info
-    * `GET /user/:user_pubkey`: returns merkle proof and amounts for a user
-        * `404` if user doesn't exist in the tree.
-        * `500` if user exists in tree but has no proof
-    * `GET /claim/:user_pubkey`: returns `ClaimStatus` info for user.
-        * `404` if `ClaimStatus` account doesn't exist (user did not claim yet or does not exist in tree)
-    * `GET /eligibility/:user_pubkey`: returns a combination of `/user` and `/claim` info
-        * `200` with claim info if user is in tree (`claimed_amount` is 0 if pending)
-        * `404` if user has no claim
+The Axum server under `api` serves Merkle proof and claim-status data for users.
 
-```
-cd api
+```sh
 cargo build
-../target/debug/drift-airdrop-api --merkle-tree-path [PATH_TO_FOLDER_STORE_ALL_MERKLE_TREES] \
---program-id E7HtfkEMhmn9uwL7EFNydcXBWy5WCYN1vFmKKjipEH1x \
---mint 4m9qg7yfJQcCLobNFgHCw6a9ZEBAYyxyy5YGef3ijknU \
---rpc-url https://your.rpc.com \
---ws-url wss://your.rpc.com
-
+target/debug/drift-if-claim-api --merkle-tree-path [MERKLE_TREE_DIR] \
+  --program-id 1nsGCPcgK7RcrZXzxP1BJMBnm1FRGf9ezjqMPYdgCkF \
+  --mint [TOKEN_MINT] \
+  --rpc-url https://your.rpc.com \
+  --ws-url wss://your.rpc.com
 ```

@@ -1,5 +1,5 @@
 {
-  "version": "0.0.1",
+  "version": "0.0.2",
   "name": "merkle_distributor",
   "instructions": [
     {
@@ -71,10 +71,11 @@
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
-            "Token vault"
+            "Token vault",
+            "Should create previously"
           ]
         },
         {
@@ -144,6 +145,134 @@
         {
           "name": "clawbackStartTs",
           "type": "i64"
+        },
+        {
+          "name": "enableSlot",
+          "type": "u64"
+        },
+        {
+          "name": "closable",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "closeDistributor",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[MerkleDistributor]."
+          ],
+          "relations": [
+            "admin",
+            "token_vault"
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Clawback receiver token account"
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also has the authority to set the clawback receiver and change itself."
+          ]
+        },
+        {
+          "name": "destinationTokenAccount",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "account receive token back"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "The [Token] program."
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeClaimStatus",
+      "docs": [
+        "only available in test phase"
+      ],
+      "accounts": [
+        {
+          "name": "claimStatus",
+          "isMut": true,
+          "isSigner": false,
+          "relations": [
+            "claimant",
+            "distributor"
+          ]
+        },
+        {
+          "name": "claimant",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "distributor",
+          "isMut": false,
+          "isSigner": false,
+          "relations": [
+            "admin"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setEnableSlot",
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[MerkleDistributor]."
+          ],
+          "relations": [
+            "admin"
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "Payer to create the distributor."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "enableSlot",
+          "type": "u64"
         }
       ]
     },
@@ -476,6 +605,27 @@
               "Unlocked amount"
             ],
             "type": "u64"
+          },
+          {
+            "name": "unlockedAmountClaimed",
+            "docs": [
+              "Unlocked amount claimed"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this account, for testing purpose"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "distributor",
+            "docs": [
+              "admin of merkle tree, store for for testing purpose"
+            ],
+            "type": "publicKey"
           }
         ]
       }
@@ -550,6 +700,13 @@
             "type": "u64"
           },
           {
+            "name": "totalAmountForgone",
+            "docs": [
+              "Total amount of tokens that have been forgone."
+            ],
+            "type": "u64"
+          },
+          {
             "name": "numNodesClaimed",
             "docs": [
               "Number of nodes that have been claimed."
@@ -597,6 +754,56 @@
               "Whether or not the distributor has been clawed back"
             ],
             "type": "bool"
+          },
+          {
+            "name": "enableSlot",
+            "docs": [
+              "this merkle tree is enable from this slot"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "closable",
+            "docs": [
+              "indicate that whether admin can close this pool, for testing purpose"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "buffer0",
+            "docs": [
+              "Buffer 0"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer1",
+            "docs": [
+              "Buffer 1"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buffer2",
+            "docs": [
+              "Buffer 2"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -614,6 +821,16 @@
         {
           "name": "timestamp",
           "type": "i64",
+          "index": false
+        },
+        {
+          "name": "amountClaimed",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "amountForgone",
+          "type": "u64",
           "index": false
         }
       ]
@@ -724,6 +941,21 @@
       "code": 6017,
       "name": "InvalidVersion",
       "msg": "Airdrop Version Mismatch"
+    },
+    {
+      "code": 6018,
+      "name": "ClaimingIsNotStarted",
+      "msg": "Claiming is not started"
+    },
+    {
+      "code": 6019,
+      "name": "CannotCloseDistributor",
+      "msg": "Cannot close distributor"
+    },
+    {
+      "code": 6020,
+      "name": "CannotCloseClaimStatus",
+      "msg": "Cannot close claim status"
     }
   ]
 }

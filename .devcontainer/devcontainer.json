@@ -1,0 +1,49 @@
+{
+  "name": "Drift IF Claim Program",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workdir",
+  "remoteUser": "root",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workdir,type=bind,consistency=cached",
+    "source=if-claim-target,target=/workdir/target,type=volume,consistency=delegated"
+  ],
+  "postCreateCommand": "yarn config set ignore-package-manager true && echo 'Dev container ready. Try: anchor build --ignore-keys, cargo build, cargo test -p merkle-distributor --lib'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "ms-vscode.vscode-json",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "rust-analyzer.cachePriming.numThreads": 1,
+        "rust-analyzer.cargo.buildScripts.enable": true,
+        "rust-analyzer.procMacro.enable": true,
+        "rust-analyzer.checkOnSave": true,
+        "rust-analyzer.check.command": "clippy",
+        "editor.formatOnSave": true,
+        "git.ignoreLimitWarning": true
+      }
+    }
+  },
+  "forwardPorts": [
+    8899,
+    8900
+  ],
+  "portsAttributes": {
+    "8899": {
+      "label": "Solana Test Validator",
+      "onAutoForward": "notify"
+    },
+    "8900": {
+      "label": "Solana Test Validator RPC",
+      "onAutoForward": "notify"
+    }
+  },
+  "containerEnv": {
+    "ANCHOR_WALLET": "/root/.config/solana/id.json",
+    "RUST_LOG": "solana_runtime::message_processor::stable_log=debug"
+  }
+}
