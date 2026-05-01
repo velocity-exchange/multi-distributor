@@ -1,5 +1,5 @@
 #
-# Drift IF Claim Program Dev Container
+# Drift DFX IOU Claims Program Dev Container
 #
 FROM --platform=linux/amd64 ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive

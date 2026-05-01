@@ -21,7 +21,7 @@ codegen-units = 1
 [workspace.package]
 version = "0.0.1"
 authors = ["Drift Labs <security@drift.trade>"]
-repository = "https://github.com/drift-labs/if-claim-program"
+repository = "https://github.com/drift-labs/dfx-distributor"
 homepage = "https://www.drift.trade/"
 license = ""
 edition = "2021"

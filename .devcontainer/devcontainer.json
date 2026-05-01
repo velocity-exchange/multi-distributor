@@ -1,5 +1,5 @@
 {
-  "name": "Drift IF Claim Program",
+  "name": "Drift DFX IOU Claims Program",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -7,7 +7,7 @@
   "remoteUser": "root",
   "mounts": [
     "source=${localWorkspaceFolder},target=/workdir,type=bind,consistency=cached",
-    "source=if-claim-target,target=/workdir/target,type=volume,consistency=delegated"
+    "source=dfx-distributor-target,target=/workdir/target,type=volume,consistency=delegated"
   ],
   "postCreateCommand": "yarn config set ignore-package-manager true && echo 'Dev container ready. Try: anchor build --ignore-keys, cargo build, cargo test -p merkle-distributor --lib'",
   "customizations": {

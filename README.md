@@ -1,18 +1,28 @@
-# Drift Insurance Fund Claims
+# Drift DFX IOU Claims
 
-A standalone claim program and supporting toolset for distributing recovered Drift Insurance Fund assets through Merkle proofs.
+A standalone claim program and supporting toolset for distributing DFX IOU tokens through Merkle proofs.
 
 This repo is forked from Merkle distributor tooling and keeps the existing distributor/claim model intact: each claim tree stores a Merkle root, each claimant proves their allocation, and tokens are paid from a program-owned vault.
+
+## Program ID
+
+Current planned DFX distributor program ID:
+
+```text
+Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1
+```
+
+The matching program keypair is intentionally not committed. Keep it outside git and copy it to `target/deploy/merkle_distributor-keypair.json` only when preparing a deploy. If the deployer chooses a different keypair later, run `anchor keys sync` and update downstream `dfx-claim` configuration.
 
 ## Claim Model
 
 - Create one distributor per asset or market-specific asset bucket.
 - Build leaves at the Drift authority level.
-- For immediate IF withdrawals, set each leaf with `amount_unlocked = full entitlement` and `amount_locked = 0`.
+- For immediate DFX IOU claims, set each leaf with `amount_unlocked = full entitlement` and `amount_locked = 0`.
 - Fund each distributor vault with the intended token amount by SPL transfer.
 - Users call `new_claim` once per eligible distributor to withdraw their unlocked amount.
 
-The vesting fields remain available for compatibility with the original program. For IF claims, use unlocked-only trees and a far-future clawback timestamp.
+The vesting fields remain available for compatibility with the original program. For DFX IOU claims, use unlocked-only trees and a far-future clawback timestamp.
 
 ## CLI
 
@@ -36,7 +46,7 @@ Build the container:
 
 ```sh
 cd .devcontainer
-docker build -t if-claim-dev .
+docker build -t dfx-distributor-dev .
 ```
 
 Start the devcontainer service:
@@ -48,7 +58,7 @@ docker compose up -d
 Open a shell inside it:
 
 ```sh
-docker compose exec if-claim /bin/bash
+docker compose exec dfx-distributor /bin/bash
 ```
 
 Alternatively, use your IDE's devcontainer integration. In VS Code or Cursor:
@@ -83,8 +93,8 @@ The Axum server under `api` serves Merkle proof and claim-status data for users.
 
 ```sh
 cargo build
-target/debug/drift-if-claim-api --merkle-tree-path [MERKLE_TREE_DIR] \
-  --program-id 1nsGCPcgK7RcrZXzxP1BJMBnm1FRGf9ezjqMPYdgCkF \
+target/debug/drift-dfx-distributor-api --merkle-tree-path [MERKLE_TREE_DIR] \
+  --program-id Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1 \
   --mint [TOKEN_MINT] \
   --rpc-url https://your.rpc.com \
   --ws-url wss://your.rpc.com

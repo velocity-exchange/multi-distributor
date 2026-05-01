@@ -21,17 +21,17 @@ pub mod instructions;
 pub mod state;
 use solana_security_txt::security_txt;
 
-declare_id!("1nsGCPcgK7RcrZXzxP1BJMBnm1FRGf9ezjqMPYdgCkF");
+declare_id!("Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1");
 
 security_txt! {
     // Required fields
-    name: "Drift Insurance Fund Claims",
+    name: "Drift DFX IOU Claims",
     project_url: "https://www.drift.trade/",
     contacts: "email:security@drift.trade",
     policy: "https://github.com/drift-labs",
     // Optional Fields
     preferred_languages: "en",
-    source_code: "https://github.com/drift-labs/if-claim-program"
+    source_code: "https://github.com/drift-labs/dfx-distributor"
 }
 
 #[program]

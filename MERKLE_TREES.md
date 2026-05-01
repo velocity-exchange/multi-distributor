@@ -1,6 +1,6 @@
-# IF Claim Merkle Tree Generation
+# DFX IOU Claim Merkle Tree Generation
 
-This guide describes how to generate Merkle trees for Drift Insurance Fund claims.
+This guide describes how to generate Merkle trees for Drift DFX IOU claims.
 
 ## Input CSV
 
@@ -12,7 +12,7 @@ AuthorityPubkey111111111111111111111111111111,123,0
 AuthorityPubkey222222222222222222222222222222,456,0
 ```
 
-For IF claims:
+For DFX IOU claims:
 
 ```text
 pubkey = Drift authority-level claimant
@@ -53,11 +53,11 @@ cargo build
 Create one output directory per asset or market-specific asset bucket.
 
 ```sh
-mkdir -p if-claim-trees/usdc
+mkdir -p dfx-claim-trees/usdc
 
 target/debug/cli create-merkle-tree \
   --csv-path path/to/usdc_authority_claims.csv \
-  --merkle-tree-path if-claim-trees/usdc \
+  --merkle-tree-path dfx-claim-trees/usdc \
   --max-nodes-per-tree 10000 \
   --amount 0 \
   --decimals 6 \
@@ -67,8 +67,8 @@ target/debug/cli create-merkle-tree \
 The command writes files like:
 
 ```text
-if-claim-trees/usdc/tree_0.json
-if-claim-trees/usdc/tree_1.json
+dfx-claim-trees/usdc/tree_0.json
+dfx-claim-trees/usdc/tree_1.json
 ```
 
 The generated JSON includes the Merkle root, max claim amount, max node count, per-user proofs, and `airdrop_version`. The code still uses the historical name `airdrop_version`; operationally this is the distributor version.
@@ -89,7 +89,7 @@ Example:
 # USDC market index 0
 target/debug/cli create-merkle-tree \
   --csv-path path/to/usdc_authority_claims.csv \
-  --merkle-tree-path if-claim-trees/usdc \
+  --merkle-tree-path dfx-claim-trees/usdc \
   --max-nodes-per-tree 10000 \
   --amount 0 \
   --decimals 6 \
@@ -98,7 +98,7 @@ target/debug/cli create-merkle-tree \
 # USDC-1 market index 34, same mint but distinct distributor versions
 target/debug/cli create-merkle-tree \
   --csv-path path/to/usdc_1_authority_claims.csv \
-  --merkle-tree-path if-claim-trees/usdc-1 \
+  --merkle-tree-path dfx-claim-trees/usdc-1 \
   --max-nodes-per-tree 10000 \
   --amount 0 \
   --decimals 6 \

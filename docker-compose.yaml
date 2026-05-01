@@ -1,7 +1,7 @@
 services:
-  if-claim-api:
-    image: driftlabs/if-claim-api:${BUILD_TAG:-local}
+  dfx-distributor-api:
+    image: driftlabs/dfx-distributor-api:${BUILD_TAG:-local}
     build:
       context: .
       dockerfile: Dockerfile
-      target: drift-if-claim-api
+      target: drift-dfx-distributor-api

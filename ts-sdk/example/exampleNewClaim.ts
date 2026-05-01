@@ -4,7 +4,7 @@ import { Wallet } from "@coral-xyz/anchor";
 import { loadKeypair } from "./utils";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 
-const distributorProgramId = new PublicKey("1nsGCPcgK7RcrZXzxP1BJMBnm1FRGf9ezjqMPYdgCkF");
+const distributorProgramId = new PublicKey("Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1");
 const userWithoutClaim = new PublicKey("2Xz15NfayPmLmhjVuXTzXSF2GgDirJ7jrwFonHFTUTPj");
 const rpc = "https://api.devnet.solana.com";
 

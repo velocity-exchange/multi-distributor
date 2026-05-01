@@ -24,12 +24,12 @@ COPY . .
 RUN --mount=type=cache,mode=0777,target=/home/root/app/target \
     --mount=type=cache,mode=0777,target=/usr/local/cargo/registry \
     --mount=type=cache,mode=0777,target=/usr/local/cargo/git \
-    cargo build --release --bin drift-if-claim-api && cp target/release/drift-if-claim-api ./
+    cargo build --release --bin drift-dfx-distributor-api && cp target/release/drift-dfx-distributor-api ./
 
 FROM --platform=linux/amd64 debian:bullseye-slim as base_image
 RUN apt-get update && apt-get install -y libssl1.1 libpq-dev ca-certificates && update-ca-certificates && rm -rf /var/lib/apt/lists/*
 
-FROM base_image as drift-if-claim-api
+FROM base_image as drift-dfx-distributor-api
 WORKDIR /app
-COPY --from=builder /home/root/app/drift-if-claim-api ./
-ENTRYPOINT ["./drift-if-claim-api"]
+COPY --from=builder /home/root/app/drift-dfx-distributor-api ./
+ENTRYPOINT ["./drift-dfx-distributor-api"]

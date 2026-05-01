@@ -1,5 +1,5 @@
 [package]
-name = "drift-if-claim-api"
+name = "drift-dfx-distributor-api"
 version = { workspace = true }
 edition = { workspace = true }
 

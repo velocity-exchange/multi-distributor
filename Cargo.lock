@@ -76,9 +76,9 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a824f2aa7e75a0c98c5a504fceb80649e9c35265d44525b5f94de4771a395cd"
+checksum = "891477e0c6a8957309ee5c45a6368af3ae14bb510732d2684ffa19af310920f9"
 dependencies = [
  "getrandom 0.2.11",
  "once_cell",
@@ -87,9 +87,9 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.8.6"
+version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a"
+checksum = "77c3a9648d43b9cd48db467b3f87fdd6e146bcc88ab0180006cef2179fe11d01"
 dependencies = [
  "cfg-if",
  "getrandom 0.2.11",
@@ -1366,6 +1366,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "dfx-distributor-cli"
+version = "0.0.1"
+dependencies = [
+ "anchor-client",
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "bincode",
+ "clap 3.2.25",
+ "csv",
+ "jito-merkle-tree",
+ "merkle-distributor",
+ "rand 0.7.3",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "solana-program",
+ "solana-rpc-client",
+ "solana-sdk",
+ "spl-associated-token-account 2.2.0",
+ "spl-token 3.5.0",
+ "zip",
+]
+
+[[package]]
 name = "dialoguer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1432,7 +1457,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "drift-if-claim-api"
+name = "drift-dfx-distributor-api"
 version = "0.0.1"
 dependencies = [
  "anchor-lang",
@@ -1833,7 +1858,7 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
- "ahash 0.7.7",
+ "ahash 0.7.8",
 ]
 
 [[package]]
@@ -1848,7 +1873,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash 0.8.6",
+ "ahash 0.8.7",
 ]
 
 [[package]]
@@ -2081,31 +2106,6 @@ name = "ieee754"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9007da9cacbd3e6343da136e98b0d2df013f553d35bdec8b518f07bea768e19c"
-
-[[package]]
-name = "if-claim-cli"
-version = "0.0.1"
-dependencies = [
- "anchor-client",
- "anchor-lang",
- "anchor-spl",
- "anyhow",
- "bincode",
- "clap 3.2.25",
- "csv",
- "jito-merkle-tree",
- "merkle-distributor",
- "rand 0.7.3",
- "reqwest",
- "serde",
- "serde_json",
- "solana-program",
- "solana-rpc-client",
- "solana-sdk",
- "spl-associated-token-account 2.2.0",
- "spl-token 3.5.0",
- "zip",
-]
 
 [[package]]
 name = "im"
@@ -3899,7 +3899,7 @@ version = "1.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02eb4f0ed3eade20f4abdcc0031167344237cd6e16808bd0f33945f9db7861fe"
 dependencies = [
- "ahash 0.8.6",
+ "ahash 0.8.7",
  "blake3",
  "block-buffer 0.10.4",
  "bs58 0.4.0",
@@ -4001,7 +4001,7 @@ version = "1.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "395d559e5be2c439551298e9fa95561807f24921fd9a1e08bb82a3dc05c02dea"
 dependencies = [
- "ahash 0.8.6",
+ "ahash 0.8.7",
  "bincode",
  "bv",
  "caps",
@@ -5887,18 +5887,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.7.27"
+version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f43de342578a3a14a9314a2dab1942cbfcbe5686e1f91acdc513058063eafe18"
+checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.27"
+version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1012d89e3acb79fad7a799ce96866cfb8098b74638465ea1b1533d35900ca90"
+checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2 1.0.70",
  "quote 1.0.33",
