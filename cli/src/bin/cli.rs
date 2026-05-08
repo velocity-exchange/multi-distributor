@@ -28,6 +28,7 @@ use jito_merkle_tree::{
     airdrop_merkle_tree::AirdropMerkleTree,
     csv_entry::CsvEntry,
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
+    CsvAmountUnit as MerkleCsvAmountUnit,
 };
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::{clock::DEFAULT_MS_PER_SLOT, instruction::Instruction};
@@ -225,6 +226,24 @@ pub struct ClawbackArgs {
     pub merkle_tree_path: PathBuf,
 }
 
+#[derive(Debug, Clone, Copy, Default, clap::ValueEnum)]
+pub enum CsvAmountUnitCli {
+    /// Integer CSV amounts are whole UI tokens (× 10^decimals).
+    #[default]
+    Tokens,
+    /// Integer CSV amounts are cents of the UI token (× 10^(decimals − 2)); requires decimals ≥ 2.
+    Cents,
+}
+
+impl From<CsvAmountUnitCli> for MerkleCsvAmountUnit {
+    fn from(v: CsvAmountUnitCli) -> Self {
+        match v {
+            CsvAmountUnitCli::Tokens => MerkleCsvAmountUnit::Tokens,
+            CsvAmountUnitCli::Cents => MerkleCsvAmountUnit::Cents,
+        }
+    }
+}
+
 #[derive(Parser, Debug)]
 pub struct CreateMerkleTreeArgs {
     /// CSV path
@@ -246,6 +265,10 @@ pub struct CreateMerkleTreeArgs {
     pub amount: u64,
     #[clap(long, env)]
     pub decimals: u32,
+
+    /// Interpret CSV `amount` / `locked_amount` as tokens or cents (see MERKLE_TREES.md).
+    #[clap(long, env, value_enum, default_value_t = CsvAmountUnitCli::Tokens)]
+    pub csv_amount_unit: CsvAmountUnitCli,
     
     /// Optional starting airdrop version. If not provided, will auto-detect next available version
     #[clap(long, env)]

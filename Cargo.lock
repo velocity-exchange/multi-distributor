@@ -87,9 +87,9 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.8.7"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c3a9648d43b9cd48db467b3f87fdd6e146bcc88ab0180006cef2179fe11d01"
+checksum = "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a"
 dependencies = [
  "cfg-if",
  "getrandom 0.2.11",
@@ -1873,7 +1873,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash 0.8.7",
+ "ahash 0.8.6",
 ]
 
 [[package]]
@@ -3899,7 +3899,7 @@ version = "1.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02eb4f0ed3eade20f4abdcc0031167344237cd6e16808bd0f33945f9db7861fe"
 dependencies = [
- "ahash 0.8.7",
+ "ahash 0.8.6",
  "blake3",
  "block-buffer 0.10.4",
  "bs58 0.4.0",
@@ -4001,7 +4001,7 @@ version = "1.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "395d559e5be2c439551298e9fa95561807f24921fd9a1e08bb82a3dc05c02dea"
 dependencies = [
- "ahash 0.8.7",
+ "ahash 0.8.6",
  "bincode",
  "bv",
  "caps",

@@ -42,6 +42,23 @@ on-chain claim amount = 2_000_000_000
 
 If production entitlements require fractional UI amounts, either provide base units with `--decimals 0`, or update the parser to support decimal strings safely.
 
+### Fractional UI amounts via cents (recommended)
+
+Keep **`--decimals`** equal to the **SPL mint decimals** (e.g. `6` for DFX-style tokens). If integer CSV amounts are **cents** of the UI token (two decimal places), pass **`--csv-amount-unit cents`**:
+
+```text
+CSV amount = 8255   (82.55 tokens expressed as cents)
+--decimals 6
+--csv-amount-unit cents
+on-chain claim amount = 8255 × 10^(6−2) = 82_550_000 base units = 82.55 tokens
+```
+
+Requires mint decimals **≥ 2**. **`locked_amount`** uses the same unit.
+
+Default **`--csv-amount-unit tokens`** means integers are **whole UI tokens** (× `10^decimals`), unchanged from older behavior.
+
+`merkle-tree/convert_dfx_users_to_merkle.py` emits **cents**; use **`--decimals 6 --csv-amount-unit cents`** for a 6-decimal mint.
+
 ## Build CLI
 
 ```sh

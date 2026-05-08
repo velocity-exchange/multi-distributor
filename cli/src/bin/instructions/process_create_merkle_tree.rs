@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::*;
 
 pub fn process_create_merkle_tree(args: &Args, merkle_tree_args: &CreateMerkleTreeArgs) {
+    let csv_amount_unit: jito_merkle_tree::CsvAmountUnit = merkle_tree_args.csv_amount_unit.into();
     // Find the next available airdrop version
     let mut start_airdrop_version = 0;
     if args.mint == Pubkey::default() {
@@ -72,9 +73,13 @@ pub fn process_create_merkle_tree(args: &Args, merkle_tree_args: &CreateMerkleTr
         csv_entries = csv_entries[last_index..csv_entries.len()].to_vec();
 
         // use airdrop_version as version
-        let merkle_tree =
-            AirdropMerkleTree::new_from_entries(sub_tree, airdrop_version, merkle_tree_args.decimals)
-                .unwrap();
+        let merkle_tree = AirdropMerkleTree::new_from_entries(
+            sub_tree,
+            airdrop_version,
+            merkle_tree_args.decimals,
+            csv_amount_unit,
+        )
+        .unwrap_or_else(|e| panic!("create merkle tree version {}: {}", airdrop_version, e));
 
         let base_path_clone = base_path.clone();
         let path = base_path_clone
@@ -96,9 +101,13 @@ pub fn process_create_merkle_tree(args: &Args, merkle_tree_args: &CreateMerkleTr
             })
             .collect::<Vec<CsvEntry>>();
 
-        let merkle_tree =
-            AirdropMerkleTree::new_from_entries(test_list, airdrop_version, merkle_tree_args.decimals as u32)
-                .unwrap();
+        let merkle_tree = AirdropMerkleTree::new_from_entries(
+            test_list,
+            airdrop_version,
+            merkle_tree_args.decimals as u32,
+            csv_amount_unit,
+        )
+        .unwrap_or_else(|e| panic!("create test merkle tree version {}: {}", airdrop_version, e));
         let base_path_clone = base_path.clone();
         let path = base_path_clone
             .as_path()

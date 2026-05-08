@@ -18,6 +18,7 @@ pub fn process_create_test_list(args: &Args, create_test_list_args: &CreateTestL
         should_include_test_list: false,
         amount: create_test_list_args.amount,
         decimals: create_test_list_args.decimals,
+        csv_amount_unit: CsvAmountUnitCli::Tokens,
         start_airdrop_version: None,
     };
     process_create_merkle_tree(args, merkle_tree_args);

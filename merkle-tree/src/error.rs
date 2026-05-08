@@ -10,4 +10,6 @@ pub enum MerkleTreeError {
     IoError(#[from] std::io::Error),
     #[error("Serde Error: {0}")]
     SerdeError(#[from] serde_json::Error),
+    #[error("Amount conversion error: {0}")]
+    AmountConversionError(String),
 }

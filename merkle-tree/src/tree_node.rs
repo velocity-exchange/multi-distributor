@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 use solana_program::{hash::hashv, pubkey::Pubkey};
 use solana_sdk::hash::Hash;
 
-use crate::csv_entry::CsvEntry;
+use crate::{
+    csv_amount_unit::{csv_amount_to_base_units, CsvAmountUnit},
+    csv_entry::CsvEntry,
+    error::MerkleTreeError,
+};
 
 /// Represents the claim information for an account.
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -46,21 +50,25 @@ impl TreeNode {
     }
 }
 
-/// Converts a ui amount to a token amount (with decimals)
-fn ui_amount_to_token_amount(amount: u64, decimals: u32) -> u64 {
-    amount * 10u64.checked_pow(decimals).unwrap()
-}
-
 impl TreeNode {
-    pub fn from_csv(entry: CsvEntry, decimals: u32) -> Self {
-        let node = Self {
-            claimant: Pubkey::from_str(entry.pubkey.as_str()).unwrap(),
-            amount: ui_amount_to_token_amount(entry.amount, decimals),
-            locked_amount: entry
-                .locked_amount
-                .map(|amount| ui_amount_to_token_amount(amount, decimals)),
-            proof: None,
+    /// Build a leaf from a CSV row. `mint_decimals` is the SPL mint precision (e.g. 6).
+    pub fn from_csv(
+        entry: CsvEntry,
+        mint_decimals: u32,
+        csv_amount_unit: CsvAmountUnit,
+    ) -> Result<Self, MerkleTreeError> {
+        let amount = csv_amount_to_base_units(entry.amount, mint_decimals, csv_amount_unit)?;
+        let locked_amount = match entry.locked_amount {
+            Some(la) => Some(csv_amount_to_base_units(la, mint_decimals, csv_amount_unit)?),
+            None => None,
         };
-        node
+        Ok(Self {
+            claimant: Pubkey::from_str(entry.pubkey.as_str()).map_err(|_| {
+                MerkleTreeError::AmountConversionError(format!("invalid pubkey {}", entry.pubkey))
+            })?,
+            amount,
+            locked_amount,
+            proof: None,
+        })
     }
 }
