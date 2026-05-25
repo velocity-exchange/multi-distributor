@@ -1,0 +1,19 @@
+{
+  "name": "dfx-upload-metadata",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "upload": "ts-node --esm upload-metadata.ts"
+  },
+  "dependencies": {
+    "@metaplex-foundation/umi": "0.9.2",
+    "@metaplex-foundation/umi-bundle-defaults": "0.9.2",
+    "@metaplex-foundation/umi-uploader-irys": "0.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "ts-node": "10.9.2",
+    "typescript": "5.4.0"
+  }
+}

@@ -14,6 +14,17 @@ Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1
 
 The matching program keypair is intentionally not committed. Keep it outside git and copy it to `target/deploy/merkle_distributor-keypair.json` only when preparing a deploy. If the deployer chooses a different keypair later, run `anchor keys sync` and update downstream `dfx-claim` configuration.
 
+## Token Mint
+
+The DFX IOU mint itself is created with the helpers under [`scripts/`](scripts/README.md):
+
+1. [`scripts/upload-metadata`](scripts/upload-metadata) — TypeScript uploader (Metaplex Umi + Irys) that pushes the logo image and off-chain JSON to Arweave and returns the metadata URI.
+2. [`scripts/create-vanity-token.sh`](scripts/create-vanity-token.sh) — grinds a vanity mint address, creates the classic SPL Token, attaches Metaplex Token Metadata via `metaboss` (immutable), mints the initial supply, verifies the wallet balance, and disables the mint authority.
+
+See [`scripts/README.md`](scripts/README.md) for prerequisites, the full flag reference, the end-to-end chained example, and mainnet caveats (immutable metadata, freeze authority handling, vanity prefix cost).
+
+The resulting mint address is what gets passed as `--mint [TOKEN_MINT]` to every CLI command below.
+
 ## Claim Model
 
 - Create one distributor per asset or market-specific asset bucket.
@@ -30,9 +41,13 @@ Build sharded Merkle trees, create distributors, fund vaults, and verify setup:
 
 ```sh
 cargo build
+
 target/debug/cli create-merkle-tree --csv-path [CSV_PATH] --merkle-tree-path [MERKLE_TREE_DIR] --max-nodes-per-tree 12000
+
 target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] new-distributor --start-vesting-ts [START_TS] --end-vesting-ts [END_TS] --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT]
+
 target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] fund-all --merkle-tree-path [MERKLE_TREE_DIR]
+
 target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] verify --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
 ```
 
@@ -72,7 +87,7 @@ Common commands:
 
 ```sh
 # build program without requiring the deploy keypair
-anchor build --ignore-keys
+anchor build
 
 # build program with keypair check
 mkdir -p target/deploy
