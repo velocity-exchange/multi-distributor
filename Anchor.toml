@@ -5,23 +5,23 @@ seeds = true
 skip-lint = false
 
 [programs.devnet]
-merkle_distributor = "Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1"
+merkle_distributor = "QQvqtpQhjKWknW2fwFLru997a5K43MJYUC73SxtshSv"
 
 [programs.localnet]
-merkle_distributor = "Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1"
+merkle_distributor = "QQvqtpQhjKWknW2fwFLru997a5K43MJYUC73SxtshSv"
 
 [programs.mainnet]
-merkle_distributor = "Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1"
+merkle_distributor = "QQvqtpQhjKWknW2fwFLru997a5K43MJYUC73SxtshSv"
 
 [programs.testnet]
-merkle_distributor = "Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1"
+merkle_distributor = "QQvqtpQhjKWknW2fwFLru997a5K43MJYUC73SxtshSv"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "/Users/crisp/.config/solana/id.json"
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
 
 [workspace]
 members = ["programs/merkle-distributor"]
