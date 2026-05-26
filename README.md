@@ -9,7 +9,7 @@ This repo is forked from Merkle distributor tooling and keeps the existing distr
 Current planned DFX distributor program ID:
 
 ```text
-Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1
+AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh
 ```
 
 The matching program keypair is intentionally not committed. Keep it outside git and copy it to `target/deploy/merkle_distributor-keypair.json` only when preparing a deploy. If the deployer chooses a different keypair later, run `anchor keys sync` and update downstream `dfx-claim` configuration.
@@ -42,13 +42,13 @@ Build sharded Merkle trees, create distributors, fund vaults, and verify setup:
 ```sh
 cargo build
 
-target/debug/cli create-merkle-tree --csv-path [CSV_PATH] --merkle-tree-path [MERKLE_TREE_DIR] --max-nodes-per-tree 12000
+target/debug/cli create-merkle-tree --csv-path merkle-tree/csv/output.csv --merkle-tree-path merkle-tree/trees --max-nodes-per-tree 12000 --amount 0 --decimals 6
 
-target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] new-distributor --start-vesting-ts [START_TS] --end-vesting-ts [END_TS] --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT]
+target/debug/cli --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 --keypair-path ~/.config/solana/id.json --rpc-url https://api.devnet.solana.com new-distributor --start-vesting-ts 1779785439 --end-vesting-ts 1779786439 --merkle-tree-path merkle-tree/trees --clawback-start-ts 1811321499 --enable-slot 465006999
 
-target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] fund-all --merkle-tree-path [MERKLE_TREE_DIR]
+target/debug/cli --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 --keypair-path ~/.config/solana/id.json --rpc-url https://api.devnet.solana.com  fund-all --merkle-tree-path merkle-tree/trees
 
-target/debug/cli --mint [TOKEN_MINT] --keypair-path [KEYPAIR] --rpc-url [RPC] verify --merkle-tree-path [MERKLE_TREE_DIR] --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
+target/debug/cli --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 --keypair-path ~/.config/solana/id.json --rpc-url https://api.devnet.solana.com  verify --merkle-tree-path merkle-tree/trees --clawback-start-ts [CLAWBACK_START_TS] --enable-slot [ENABLE_SLOT] --admin [ADMIN]
 ```
 
 See [MERKLE_TREES.md](MERKLE_TREES.md) for CSV format, amount units, and distributor-version guidance.
@@ -108,9 +108,9 @@ The Axum server under `api` serves Merkle proof and claim-status data for users.
 
 ```sh
 cargo build
-target/debug/drift-dfx-distributor-api --merkle-tree-path [MERKLE_TREE_DIR] \
-  --program-id Fxwtf2gpP31Dv5RweUXmSPaLtgCZsp18GVLhYZPnUJP1 \
-  --mint [TOKEN_MINT] \
-  --rpc-url https://your.rpc.com \
-  --ws-url wss://your.rpc.com
+target/debug/drift-dfx-distributor-api --merkle-tree-path merkle-tree/trees \
+  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 \
+  --rpc-url https://api.devnet.solana.com  \
+  --ws-url wss://api.devnet.solana.com
 ```

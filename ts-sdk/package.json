@@ -1,5 +1,5 @@
 {
-  "name": "@drift-labs/merkle-distributor-sdk",
+  "name": "@velocity-exchange/merkle-distributor-sdk",
   "version": "0.0.1",
   "description": "Merkle distributor SDK",
   "main": "src/index.ts",
@@ -21,11 +21,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@coral-xyz/anchor": "^0.29.0",
+    "@coral-xyz/anchor": "0.29.0",
     "@solana/spl-token": "0.1.8",
-    "@solana/web3.js": "~1.87.6",
-    "prettier": "^3.2.5",
-    "ts-node": "^10.9.2"
+    "@solana/web3.js": "1.87.6",
+    "prettier": "3.2.5",
+    "ts-node": "10.9.2"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
@@ -36,10 +36,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/drift-labs/distributor.git"
+    "url": "git+https://github.com/drift-labs/dfx-distributor.git"
   },
   "bugs": {
-    "url": "https://github.com/drift-labs/distributor/issues"
+    "url": "https://github.com/drift-labs/dfx-distributor/issues"
   },
-  "homepage": "https://github.com/drift-labs/distributor#readme"
+  "homepage": "https://github.com/drift-labs/dfx-distributor#readme"
 }
