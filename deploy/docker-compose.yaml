@@ -1,0 +1,45 @@
+# Production runtime compose for the DFX distributor API.
+#
+# This is NOT the build file. Build/push the image with the root
+# ./docker-compose.yaml (CI), then run THIS file on the server with a
+# pre-built image pulled from the registry.
+#
+# Usage on the host:
+#   cp .env.example .env        # then fill in real values
+#   docker compose pull         # pull the tagged image
+#   docker compose up -d
+#
+# Merkle trees are NOT baked into the image — they are mounted read-only
+# from MERKLE_TREE_HOST_DIR on the host. To ship a new airdrop version:
+# add the new tree_*.json to that dir, then `docker compose restart api`
+# (the API loads every *.json once, at startup; it does not watch the dir).
+
+services:
+  api:
+    # Override the registry/tag via the API_IMAGE env var, e.g.
+    #   API_IMAGE=123456789012.dkr.ecr.us-east-1.amazonaws.com/dfx-distributor-api:v1.0.0
+    image: ${API_IMAGE:-driftlabs/dfx-distributor-api:local}
+    restart: unless-stopped
+    ports:
+      # Expose only to localhost; terminate TLS + (optionally) add auth in a
+      # reverse proxy (nginx/Caddy) or an ALB in front. Drop the 127.0.0.1
+      # prefix only if the security group already restricts inbound 7001.
+      - "127.0.0.1:7001:7001"
+    volumes:
+      - "${MERKLE_TREE_HOST_DIR:-./merkle-trees}:/data/merkle-trees:ro"
+    env_file:
+      - .env
+    environment:
+      # Container-internal paths and bind address are fixed here; everything
+      # else (RPC_URL, WS_URL, MINT, PROGRAM_ID, auth, defaults) comes from .env
+      BIND_ADDR: "0.0.0.0:7001"
+      MERKLE_TREE_PATH: "/data/merkle-trees"
+    # NOTE: the runtime image (debian-slim) does not ship curl/wget, so a
+    # built-in container healthcheck would need one of those added to the
+    # Dockerfile. For now, health-check the "/" route (returns 200, no auth)
+    # from your reverse proxy / ALB target group instead.
+    # healthcheck:
+    #   test: ["CMD", "curl", "-fsS", "http://localhost:7001/"]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3

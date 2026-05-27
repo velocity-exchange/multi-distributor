@@ -1,5 +1,9 @@
 .idea/
 
+# Deploy secrets / runtime tree data (keep .env.example, ignore real .env)
+deploy/.env
+deploy/merkle-trees/
+
 dummy-csv.csv
 
 .anchor
