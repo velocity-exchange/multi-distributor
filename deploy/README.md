@@ -15,6 +15,25 @@ There are two compose files, with different jobs:
 | `../docker-compose.yaml` (repo root) | Build & tag the image (CI / your laptop) | Yes (`cargo build --release`) |
 | `./docker-compose.yaml` (this dir) | **Run** a pre-built image on the server | No — pulls the image |
 
+## Long-lived deployment: infra-v3 / EKS
+
+For the production, long-lived service this API runs on Drift's EKS cluster via
+`drift-labs/infrastructure-v3`, **not** the single-EC2 flow below. In that model:
+
+- The image is built + pushed to Drift ECR by `.github/workflows/deploy-image.yml`
+  (this repo) on push to `main` (devnet/`master` namespace) or a `v*` tag
+  (mainnet-beta).
+- Merkle trees are **not** in the image. Upload them to S3 and reload:
+  ```sh
+  scripts/upload-trees.sh master ./merkle-trees        # devnet
+  kubectl rollout restart -n master deployment/dfx-distributor-api
+  ```
+- TLS, WAF, basic-auth, RPC creds, and autoscaling are owned by the infra-v3
+  CDK stack `lib/stacks/dfx-distributor-stack.ts`.
+
+The single-EC2 + docker-compose flow below remains valid for short-lived
+rehearsals / one-off campaigns.
+
 ## Why trees are mounted, not committed
 
 Tree JSON is **not** baked into the image and **should not** be committed
