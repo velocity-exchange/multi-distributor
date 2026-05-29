@@ -59,6 +59,7 @@ CSV_PATH="$(cfg "$CONFIG" '.csv_path')"
 
 [[ -n "$MINT" ]] || { echo "Config missing 'mint': $CONFIG" >&2; exit 1; }
 [[ -n "$SYMBOL" ]] || { echo "Config missing 'symbol': $CONFIG" >&2; exit 1; }
+[[ -n "$DECIMALS" ]] || { echo "Config missing 'decimals': $CONFIG" >&2; exit 1; }
 
 # DFX CSV doesn't follow the <index>-<symbol> convention; allow an explicit
 # csv_path override, falling back to <csv-dir>/<symbol>.csv.

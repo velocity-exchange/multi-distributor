@@ -48,15 +48,19 @@ Shared top-level keys (both configs):
 |---|---|
 | `rpc_url` | Solana RPC URL. |
 | `program_id` | Distributor program id. |
-| `keypair_path` | Admin/payer keypair. |
+| `keypair_path` | Admin/payer keypair. A leading `~` is expanded to `$HOME`. |
 | `priority` | Priority fee (microlamports), or `null` to omit `--priority`. |
 | `start_vesting_ts` / `end_vesting_ts` | Vesting window (contract requires start < end). |
 | `clawback_start_ts` | Clawback period start. |
 | `enable_slot` | Claim-open slot, or `0` for immediate. |
 | `max_nodes_per_tree` | Tree sharding size (e.g. `10000`). |
-| `csv_amount_unit` | `tokens` or `cents` (see MERKLE_TREES.md). |
+| `csv_amount_unit` | `tokens` or `cents` (see MERKLE_TREES.md). Omit/`null` to use the cli default (`tokens`). |
 | `closable` | Boolean; `true` passes `--closable` to `new-distributor`. |
-| `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). |
+| `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version. |
+
+`rpc_url`, `program_id`, `keypair_path`, `start_vesting_ts`, `end_vesting_ts`,
+`clawback_start_ts`, `enable_slot`, and `max_nodes_per_tree` are required — a
+missing one fails preflight with a clear message rather than mid-deploy.
 
 IF config adds a `markets` array; each entry has `index`, `symbol`, `mint`,
 `decimals`. DFX config instead has a single `mint`, `decimals`, `symbol`, and

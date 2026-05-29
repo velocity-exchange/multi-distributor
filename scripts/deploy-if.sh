@@ -70,6 +70,17 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   mint="$(jq -r ".markets[$i].mint" "$CONFIG")"
   decimals="$(jq -r ".markets[$i].decimals" "$CONFIG")"
 
+  # jq prints "null" for an absent field; reject incomplete entries up front so
+  # the start-index arithmetic and the cli call don't choke on a bad value.
+  for field in index symbol mint decimals; do
+    val="${!field}"
+    if [[ -z "$val" || "$val" == "null" ]]; then
+      echo "==> markets[$i] missing '$field'; skipping" >&2
+      FAIL+=("markets[$i]")
+      continue 2
+    fi
+  done
+
   if [[ -n "$START_INDEX" && "$index" -lt "$START_INDEX" ]]; then
     echo "==> [${index}-${symbol}] skipped (< start-index $START_INDEX)"
     continue

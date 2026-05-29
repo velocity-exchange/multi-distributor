@@ -63,6 +63,27 @@ load_shared_config() {
   CSV_AMOUNT_UNIT="$(cfg "$config" '.csv_amount_unit')"
   CLOSABLE="$(cfg "$config" '.closable')"
   START_AIRDROP_VERSION="$(cfg "$config" '.start_airdrop_version')"
+
+  # The cli (and solana's read_keypair_file) does not expand ~; do it here so a
+  # leading-tilde keypair_path works.
+  KEYPAIR_PATH="${KEYPAIR_PATH/#\~/$HOME}"
+
+  # Fail fast (in preflight, not mid-deploy) if a required shared key is missing.
+  # priority/closable are optional; csv_amount_unit/start_airdrop_version fall
+  # back to the cli's own defaults and are passed conditionally by deploy_market.
+  local missing=()
+  [[ -n "$RPC_URL" ]]            || missing+=(rpc_url)
+  [[ -n "$PROGRAM_ID" ]]         || missing+=(program_id)
+  [[ -n "$KEYPAIR_PATH" ]]       || missing+=(keypair_path)
+  [[ -n "$MAX_NODES_PER_TREE" ]] || missing+=(max_nodes_per_tree)
+  [[ -n "$START_VESTING_TS" ]]   || missing+=(start_vesting_ts)
+  [[ -n "$END_VESTING_TS" ]]     || missing+=(end_vesting_ts)
+  [[ -n "$CLAWBACK_START_TS" ]]  || missing+=(clawback_start_ts)
+  [[ -n "$ENABLE_SLOT" ]]        || missing+=(enable_slot)
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "Config missing required key(s): ${missing[*]}" >&2
+    exit 1
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -102,11 +123,17 @@ deploy_market() {
     fi
   fi
 
-  # Build conditional global/subcommand flags.
+  # Build conditional global/subcommand flags. csv_amount_unit and
+  # start_airdrop_version are omitted when unset so the cli applies its own
+  # defaults (tokens / next-available-version) instead of receiving an empty arg.
   local -a priority_flag=()
   [[ -n "$priority" ]] && priority_flag=(--priority "$priority")
   local -a closable_flag=()
   [[ "$closable" == "true" ]] && closable_flag=(--closable)
+  local -a csv_unit_flag=()
+  [[ -n "$csv_amount_unit" ]] && csv_unit_flag=(--csv-amount-unit "$csv_amount_unit")
+  local -a start_ver_flag=()
+  [[ -n "$start_airdrop_version" ]] && start_ver_flag=(--start-airdrop-version "$start_airdrop_version")
 
   # 1. generate trees
   local -a gen=(
@@ -122,8 +149,8 @@ deploy_market() {
     --max-nodes-per-tree "$max_nodes_per_tree"
     --amount 0
     --decimals "$decimals"
-    --csv-amount-unit "$csv_amount_unit"
-    --start-airdrop-version "$start_airdrop_version"
+    ${csv_unit_flag[@]+"${csv_unit_flag[@]}"}
+    ${start_ver_flag[@]+"${start_ver_flag[@]}"}
   )
 
   # 2. create distributor(s) for the generated trees
@@ -145,9 +172,9 @@ deploy_market() {
 
   if [[ "${DRY_RUN:-0}" == "1" ]]; then
     echo "    [dry-run] create-merkle-tree:"
-    printf '      %q' "${gen[@]}"; echo
+    printf '     '; printf ' %q' "${gen[@]}"; echo
     echo "    [dry-run] new-distributor:"
-    printf '      %q' "${dist[@]}"; echo
+    printf '     '; printf ' %q' "${dist[@]}"; echo
     return 0
   fi
 
