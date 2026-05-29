@@ -32,7 +32,8 @@ step, and generating the input CSVs. See [`DEPLOY.md`](../DEPLOY.md).
 ## Config files
 
 One JSON file drives a deploy. Shared deploy settings live at the top level;
-only mint/decimals (+ index/symbol) differ per market.
+the per-market fields differ per market (IF: index/symbol/mint; DFX: a single
+mint/decimals/symbol).
 
 Copy an example, fill it in, and keep the real file out of git (the real names
 `scripts/if-markets.json` and `scripts/dfx-config.json` are gitignored):
@@ -54,7 +55,7 @@ Shared top-level keys (both configs):
 | `clawback_start_ts` | Clawback period start. |
 | `enable_slot` | Claim-open slot, or `0` for immediate. |
 | `max_nodes_per_tree` | Tree sharding size (e.g. `10000`). |
-| `csv_amount_unit` | `tokens` or `cents` (see MERKLE_TREES.md). Omit/`null` to use the cli default (`tokens`). |
+| `csv_amount_unit` | DFX only: `tokens` or `cents` (see MERKLE_TREES.md); omit/`null` for the cli default (`tokens`). Ignored by IF — see "Amount units" below. |
 | `closable` | Boolean; `true` passes `--closable` to `new-distributor`. |
 | `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version. |
 | `csv_dir` | Directory holding the input CSVs. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX). |
@@ -65,9 +66,24 @@ Shared top-level keys (both configs):
 missing one fails preflight with a clear message rather than mid-deploy.
 `csv_dir`/`trees_dir` are optional (flag > config > built-in default).
 
-IF config adds a `markets` array; each entry has `index`, `symbol`, `mint`,
-`decimals`. DFX config instead has a single `mint`, `decimals`, `symbol`, and
-an optional `csv_path`.
+IF config adds a `markets` array; each entry has `index`, `symbol`, `mint` (no
+per-market `decimals` — see "Amount units"). DFX config instead has a single
+`mint`, `decimals`, `symbol`, and an optional `csv_path`.
+
+## Amount units
+
+The two flows treat CSV `amount`/`locked_amount` integers differently:
+
+- **IF — base units (fixed).** Insurance Fund entitlements are read from
+  on-chain balances, which are already token base units. `deploy-if.sh` always
+  generates trees with `--csv-amount-unit tokens --decimals 0`, so each CSV
+  integer is the exact on-chain claim amount with no scaling and no rounding.
+  The CSV therefore holds **raw base units**, not UI token amounts, and the IF
+  config needs no `decimals` or `csv_amount_unit`. This is hard-coded in the
+  script so an IF deploy can't be put into a lossy mode by mistake.
+- **DFX — UI units (configurable).** The DFX IOU CSV is human-authored in UI
+  units, so DFX uses the mint `decimals` plus `csv_amount_unit` (`cents` in the
+  example, giving 2-decimal-place precision). See MERKLE_TREES.md.
 
 ## deploy-if.sh
 

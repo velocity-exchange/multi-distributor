@@ -28,8 +28,10 @@ Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--start-index
   -h, --help     Show this help
 
 Shared settings (rpc_url, program_id, keypair_path, vesting timestamps, etc.)
-live at the top level of the config; only mint/decimals/index/symbol differ
-per market in the markets[] array. See scripts/DEPLOY_SCRIPTS.md.
+live at the top level of the config; only index/symbol/mint differ per market
+in the markets[] array. IF CSVs carry raw on-chain base units, so trees are
+generated in base-unit mode (no per-market decimals needed). See
+scripts/deploy-merkle-trees/deploy-merkle-trees.md.
 EOF
   exit 1
 }
@@ -56,6 +58,15 @@ export DRY_RUN
 preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
 
+# IF entitlements come straight from on-chain Insurance Fund balances, which are
+# already token base units. Generate trees in base-unit mode (--csv-amount-unit
+# tokens with --decimals 0) so each CSV integer is the exact on-chain claim
+# amount, with no scaling and no rounding. This is fixed for IF rather than
+# config-driven, so the deploy can't be put into a lossy mode (e.g. cents) by
+# mistake. The CSV therefore carries raw base units, not UI token amounts.
+CSV_AMOUNT_UNIT="tokens"
+IF_DECIMALS=0
+
 # Directory precedence: CLI flag > config (csv_dir/trees_dir) > built-in default.
 [[ -n "$CSV_DIR" ]]   || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
 [[ -n "$CSV_DIR" ]]   || CSV_DIR="./if-csv"
@@ -76,11 +87,10 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   index="$(jq -r ".markets[$i].index" "$CONFIG")"
   symbol="$(jq -r ".markets[$i].symbol" "$CONFIG")"
   mint="$(jq -r ".markets[$i].mint" "$CONFIG")"
-  decimals="$(jq -r ".markets[$i].decimals" "$CONFIG")"
 
   # jq prints "null" for an absent field; reject incomplete entries up front so
   # the start-index arithmetic and the cli call don't choke on a bad value.
-  for field in index symbol mint decimals; do
+  for field in index symbol mint; do
     val="${!field}"
     if [[ -z "$val" || "$val" == "null" ]]; then
       echo "==> markets[$i] missing '$field'; skipping" >&2
@@ -98,7 +108,7 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   csv_path="${CSV_DIR}/${label}.csv"
   tree_dir="${TREES_DIR}/${label}"
 
-  if deploy_market "$mint" "$decimals" "$csv_path" "$tree_dir" "$label"; then
+  if deploy_market "$mint" "$IF_DECIMALS" "$csv_path" "$tree_dir" "$label"; then
     OK+=("$label")
   else
     FAIL+=("$label")
