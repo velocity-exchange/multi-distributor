@@ -49,20 +49,7 @@ done
 export DRY_RUN
 
 preflight "$REPO_ROOT" "$CONFIG"
-
-# Shared top-level settings.
-RPC_URL="$(cfg "$CONFIG" '.rpc_url')"
-PROGRAM_ID="$(cfg "$CONFIG" '.program_id')"
-KEYPAIR_PATH="$(cfg "$CONFIG" '.keypair_path')"
-PRIORITY="$(cfg "$CONFIG" '.priority')"
-START_VESTING_TS="$(cfg "$CONFIG" '.start_vesting_ts')"
-END_VESTING_TS="$(cfg "$CONFIG" '.end_vesting_ts')"
-CLAWBACK_START_TS="$(cfg "$CONFIG" '.clawback_start_ts')"
-ENABLE_SLOT="$(cfg "$CONFIG" '.enable_slot')"
-MAX_NODES_PER_TREE="$(cfg "$CONFIG" '.max_nodes_per_tree')"
-CSV_AMOUNT_UNIT="$(cfg "$CONFIG" '.csv_amount_unit')"
-CLOSABLE="$(cfg "$CONFIG" '.closable')"
-START_AIRDROP_VERSION="$(cfg "$CONFIG" '.start_airdrop_version')"
+load_shared_config "$CONFIG"
 
 # Single-mint specifics.
 MINT="$(cfg "$CONFIG" '.mint')"
@@ -82,12 +69,7 @@ echo "==> DFX deploy from $CONFIG"
 echo "    rpc=$RPC_URL program=$PROGRAM_ID dry-run=$DRY_RUN"
 echo
 
-deploy_market \
-  "$MINT" "$DECIMALS" "$CSV_PATH" "$TREE_DIR" \
-  "$RPC_URL" "$PROGRAM_ID" "$KEYPAIR_PATH" "$PRIORITY" \
-  "$MAX_NODES_PER_TREE" "$CSV_AMOUNT_UNIT" "$START_AIRDROP_VERSION" \
-  "$START_VESTING_TS" "$END_VESTING_TS" "$CLAWBACK_START_TS" \
-  "$ENABLE_SLOT" "$CLOSABLE" "$SYMBOL"
+deploy_market "$MINT" "$DECIMALS" "$CSV_PATH" "$TREE_DIR" "$SYMBOL"
 
 echo
 echo "==> Done."

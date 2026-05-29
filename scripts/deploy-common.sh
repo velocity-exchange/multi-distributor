@@ -43,38 +43,51 @@ cfg() {
 }
 
 # ---------------------------------------------------------------------------
+# Read shared top-level deploy settings from the config into the globals that
+# deploy_market consumes. Both entry scripts call this so the shared-key list
+# lives in exactly one place. Sets: RPC_URL PROGRAM_ID KEYPAIR_PATH PRIORITY
+# START_VESTING_TS END_VESTING_TS CLAWBACK_START_TS ENABLE_SLOT
+# MAX_NODES_PER_TREE CSV_AMOUNT_UNIT CLOSABLE START_AIRDROP_VERSION.
+# ---------------------------------------------------------------------------
+load_shared_config() {
+  local config="$1"
+  RPC_URL="$(cfg "$config" '.rpc_url')"
+  PROGRAM_ID="$(cfg "$config" '.program_id')"
+  KEYPAIR_PATH="$(cfg "$config" '.keypair_path')"
+  PRIORITY="$(cfg "$config" '.priority')"
+  START_VESTING_TS="$(cfg "$config" '.start_vesting_ts')"
+  END_VESTING_TS="$(cfg "$config" '.end_vesting_ts')"
+  CLAWBACK_START_TS="$(cfg "$config" '.clawback_start_ts')"
+  ENABLE_SLOT="$(cfg "$config" '.enable_slot')"
+  MAX_NODES_PER_TREE="$(cfg "$config" '.max_nodes_per_tree')"
+  CSV_AMOUNT_UNIT="$(cfg "$config" '.csv_amount_unit')"
+  CLOSABLE="$(cfg "$config" '.closable')"
+  START_AIRDROP_VERSION="$(cfg "$config" '.start_airdrop_version')"
+}
+
+# ---------------------------------------------------------------------------
 # Deploy a single market: generate trees, then create distributor(s).
-# All inputs are passed as named env-style locals via positional args so the
-# logic lives in exactly one place and never drifts between the two scripts.
+# The per-market specifics are positional args; the shared deploy settings are
+# read from the globals set by load_shared_config, so the logic lives in
+# exactly one place and never drifts between the two scripts.
 #
 # Positional args:
 #   1  mint
 #   2  decimals
 #   3  csv_path
 #   4  tree_dir
-#   5  rpc_url
-#   6  program_id
-#   7  keypair_path
-#   8  priority              (may be empty)
-#   9  max_nodes_per_tree
-#  10  csv_amount_unit
-#  11  start_airdrop_version
-#  12  start_vesting_ts
-#  13  end_vesting_ts
-#  14  clawback_start_ts
-#  15  enable_slot
-#  16  closable              ("true" => pass --closable)
-#  17  label                 (for log lines, e.g. "0-USDC")
+#   5  label                 (for log lines, e.g. "0-USDC")
 #
 # Honors DRY_RUN: when "1", prints the commands instead of running them.
 # In non-dry-run mode the CSV must exist; under dry-run it's only warned about.
 # ---------------------------------------------------------------------------
 deploy_market() {
-  local mint="$1" decimals="$2" csv_path="$3" tree_dir="$4"
-  local rpc_url="$5" program_id="$6" keypair_path="$7" priority="$8"
-  local max_nodes_per_tree="$9" csv_amount_unit="${10}" start_airdrop_version="${11}"
-  local start_vesting_ts="${12}" end_vesting_ts="${13}" clawback_start_ts="${14}"
-  local enable_slot="${15}" closable="${16}" label="${17}"
+  local mint="$1" decimals="$2" csv_path="$3" tree_dir="$4" label="$5"
+  local rpc_url="$RPC_URL" program_id="$PROGRAM_ID" keypair_path="$KEYPAIR_PATH"
+  local priority="$PRIORITY" max_nodes_per_tree="$MAX_NODES_PER_TREE"
+  local csv_amount_unit="$CSV_AMOUNT_UNIT" start_airdrop_version="$START_AIRDROP_VERSION"
+  local start_vesting_ts="$START_VESTING_TS" end_vesting_ts="$END_VESTING_TS"
+  local clawback_start_ts="$CLAWBACK_START_TS" enable_slot="$ENABLE_SLOT" closable="$CLOSABLE"
 
   echo "==> [$label] mint=$mint decimals=$decimals"
   echo "    csv:   $csv_path"

@@ -52,20 +52,7 @@ done
 export DRY_RUN
 
 preflight "$REPO_ROOT" "$CONFIG"
-
-# Shared top-level settings.
-RPC_URL="$(cfg "$CONFIG" '.rpc_url')"
-PROGRAM_ID="$(cfg "$CONFIG" '.program_id')"
-KEYPAIR_PATH="$(cfg "$CONFIG" '.keypair_path')"
-PRIORITY="$(cfg "$CONFIG" '.priority')"
-START_VESTING_TS="$(cfg "$CONFIG" '.start_vesting_ts')"
-END_VESTING_TS="$(cfg "$CONFIG" '.end_vesting_ts')"
-CLAWBACK_START_TS="$(cfg "$CONFIG" '.clawback_start_ts')"
-ENABLE_SLOT="$(cfg "$CONFIG" '.enable_slot')"
-MAX_NODES_PER_TREE="$(cfg "$CONFIG" '.max_nodes_per_tree')"
-CSV_AMOUNT_UNIT="$(cfg "$CONFIG" '.csv_amount_unit')"
-CLOSABLE="$(cfg "$CONFIG" '.closable')"
-START_AIRDROP_VERSION="$(cfg "$CONFIG" '.start_airdrop_version')"
+load_shared_config "$CONFIG"
 
 NUM_MARKETS="$(jq '.markets | length' "$CONFIG")"
 [[ "$NUM_MARKETS" -gt 0 ]] || { echo "Config has no markets[]: $CONFIG" >&2; exit 1; }
@@ -92,12 +79,7 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   csv_path="${CSV_DIR}/${label}.csv"
   tree_dir="${TREES_DIR}/${label}"
 
-  if deploy_market \
-      "$mint" "$decimals" "$csv_path" "$tree_dir" \
-      "$RPC_URL" "$PROGRAM_ID" "$KEYPAIR_PATH" "$PRIORITY" \
-      "$MAX_NODES_PER_TREE" "$CSV_AMOUNT_UNIT" "$START_AIRDROP_VERSION" \
-      "$START_VESTING_TS" "$END_VESTING_TS" "$CLAWBACK_START_TS" \
-      "$ENABLE_SLOT" "$CLOSABLE" "$label"; then
+  if deploy_market "$mint" "$decimals" "$csv_path" "$tree_dir" "$label"; then
     OK+=("$label")
   else
     FAIL+=("$label")
