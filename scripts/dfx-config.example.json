@@ -1,0 +1,18 @@
+{
+  "rpc_url": "https://api.devnet.solana.com",
+  "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
+  "keypair_path": "~/.config/solana/id.json",
+  "priority": null,
+  "start_vesting_ts": 1779785439,
+  "end_vesting_ts": 1779786439,
+  "clawback_start_ts": 1811321499,
+  "enable_slot": 465006999,
+  "max_nodes_per_tree": 10000,
+  "csv_amount_unit": "cents",
+  "closable": false,
+  "start_airdrop_version": 0,
+  "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "decimals": 6,
+  "symbol": "DFX",
+  "csv_path": null
+}

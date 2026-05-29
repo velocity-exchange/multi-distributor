@@ -1,0 +1,19 @@
+{
+  "rpc_url": "https://api.devnet.solana.com",
+  "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
+  "keypair_path": "~/.config/solana/id.json",
+  "priority": null,
+  "start_vesting_ts": 1779785439,
+  "end_vesting_ts": 1779786439,
+  "clawback_start_ts": 1811321499,
+  "enable_slot": 465006999,
+  "max_nodes_per_tree": 10000,
+  "csv_amount_unit": "cents",
+  "closable": false,
+  "start_airdrop_version": 0,
+  "markets": [
+    { "index": 0, "symbol": "USDC", "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "decimals": 6 },
+    { "index": 1, "symbol": "SOL", "mint": "So11111111111111111111111111111111111111112", "decimals": 9 },
+    { "index": 2, "symbol": "BTC", "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh", "decimals": 8 }
+  ]
+}

@@ -4,6 +4,10 @@
 deploy/.env
 deploy/merkle-trees/
 
+# Real deploy configs (keep the committed *.example.json, ignore the real ones)
+scripts/if-markets.json
+scripts/dfx-config.json
+
 dummy-csv.csv
 
 .anchor
