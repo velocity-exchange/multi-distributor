@@ -8,8 +8,8 @@ set -euo pipefail
 # Funding (fund-all) and verify are intentionally MANUAL and out of scope.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=scripts/deploy-common.sh
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# shellcheck source=scripts/deploy-merkle-trees/deploy-common.sh
 source "${SCRIPT_DIR}/deploy-common.sh"
 
 usage() {
@@ -17,9 +17,11 @@ usage() {
 Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
 
   --config       IF config JSON (default: scripts/if-markets.json)
-  --csv-dir      Directory holding per-market CSVs (default: ./if-csv)
+  --csv-dir      Directory holding per-market CSVs. Overrides the config's
+                 csv_dir; falls back to ./if-csv if neither is set.
                  Each market resolves to <csv-dir>/<index>-<symbol>.csv
-  --trees-dir    Output directory for trees (default: ./if-trees)
+  --trees-dir    Output directory for trees. Overrides the config's trees_dir;
+                 falls back to ./if-trees if neither is set.
                  Each market writes to <trees-dir>/<index>-<symbol>/
   --start-index  Skip markets whose index < N (resume an interrupted run)
   --dry-run      Print the CLI commands instead of executing them
@@ -33,8 +35,8 @@ EOF
 }
 
 CONFIG="${SCRIPT_DIR}/if-markets.json"
-CSV_DIR="./if-csv"
-TREES_DIR="./if-trees"
+CSV_DIR=""
+TREES_DIR=""
 START_INDEX=""
 DRY_RUN=0
 
@@ -53,6 +55,12 @@ export DRY_RUN
 
 preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
+
+# Directory precedence: CLI flag > config (csv_dir/trees_dir) > built-in default.
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="./if-csv"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="./if-trees"
 
 NUM_MARKETS="$(jq '.markets | length' "$CONFIG")"
 [[ "$NUM_MARKETS" -gt 0 ]] || { echo "Config has no markets[]: $CONFIG" >&2; exit 1; }

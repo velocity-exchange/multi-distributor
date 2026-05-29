@@ -57,10 +57,13 @@ Shared top-level keys (both configs):
 | `csv_amount_unit` | `tokens` or `cents` (see MERKLE_TREES.md). Omit/`null` to use the cli default (`tokens`). |
 | `closable` | Boolean; `true` passes `--closable` to `new-distributor`. |
 | `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version. |
+| `csv_dir` | Directory holding the input CSVs. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX). |
+| `trees_dir` | Output directory for generated trees. The `--trees-dir` flag overrides it; omit both to fall back to `./if-trees` (IF) / `./dfx-trees` (DFX). |
 
 `rpc_url`, `program_id`, `keypair_path`, `start_vesting_ts`, `end_vesting_ts`,
 `clawback_start_ts`, `enable_slot`, and `max_nodes_per_tree` are required — a
 missing one fails preflight with a clear message rather than mid-deploy.
+`csv_dir`/`trees_dir` are optional (flag > config > built-in default).
 
 IF config adds a `markets` array; each entry has `index`, `symbol`, `mint`,
 `decimals`. DFX config instead has a single `mint`, `decimals`, `symbol`, and

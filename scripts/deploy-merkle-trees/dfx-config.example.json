@@ -11,6 +11,8 @@
   "csv_amount_unit": "cents",
   "closable": false,
   "start_airdrop_version": 0,
+  "csv_dir": "./dfx-csv",
+  "trees_dir": "./dfx-trees",
   "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
   "decimals": 6,
   "symbol": "DFX",

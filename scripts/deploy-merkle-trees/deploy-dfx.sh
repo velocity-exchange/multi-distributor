@@ -8,8 +8,8 @@ set -euo pipefail
 # Funding (fund-all) and verify are intentionally MANUAL and out of scope.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=scripts/deploy-common.sh
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+# shellcheck source=scripts/deploy-merkle-trees/deploy-common.sh
 source "${SCRIPT_DIR}/deploy-common.sh"
 
 usage() {
@@ -17,10 +17,11 @@ usage() {
 Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--dry-run]
 
   --config     DFX config JSON (default: scripts/dfx-config.json)
-  --csv-dir    Directory for the CSV when csv_path is not set in config
-               (default: ./dfx-csv). Resolves to <csv-dir>/<symbol>.csv
-  --trees-dir  Output directory for trees (default: ./dfx-trees)
-               Writes to <trees-dir>/<symbol>/
+  --csv-dir    Directory for the CSV when csv_path is not set in config.
+               Overrides the config's csv_dir; falls back to ./dfx-csv.
+               Resolves to <csv-dir>/<symbol>.csv
+  --trees-dir  Output directory for trees. Overrides the config's trees_dir;
+               falls back to ./dfx-trees. Writes to <trees-dir>/<symbol>/
   --dry-run    Print the CLI commands instead of executing them
   -h, --help   Show this help
 
@@ -32,8 +33,8 @@ EOF
 }
 
 CONFIG="${SCRIPT_DIR}/dfx-config.json"
-CSV_DIR="./dfx-csv"
-TREES_DIR="./dfx-trees"
+CSV_DIR=""
+TREES_DIR=""
 DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
@@ -50,6 +51,12 @@ export DRY_RUN
 
 preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
+
+# Directory precedence: CLI flag > config (csv_dir/trees_dir) > built-in default.
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="./dfx-csv"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="./dfx-trees"
 
 # Single-mint specifics.
 MINT="$(cfg "$CONFIG" '.mint')"

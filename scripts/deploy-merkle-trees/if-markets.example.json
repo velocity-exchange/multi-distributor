@@ -7,13 +7,72 @@
   "end_vesting_ts": 1779786439,
   "clawback_start_ts": 1811321499,
   "enable_slot": 465006999,
-  "max_nodes_per_tree": 10000,
+  "max_nodes_per_tree": 12000,
   "csv_amount_unit": "cents",
   "closable": false,
   "start_airdrop_version": 0,
+  "csv_dir": "./if-csv",
+  "trees_dir": "./if-trees",
   "markets": [
-    { "index": 0, "symbol": "USDC", "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "decimals": 6 },
-    { "index": 1, "symbol": "SOL", "mint": "So11111111111111111111111111111111111111112", "decimals": 9 },
-    { "index": 2, "symbol": "BTC", "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh", "decimals": 8 }
+    {
+      "index": 0,
+      "symbol": "USDC",
+      "mint": "85znjikQcEevXKWK2rdSc8PfBgHhMYrKmHiWm6d5PpFZ",
+      "decimals": 6
+    },
+    {
+      "index": 1,
+      "symbol": "SOL",
+      "mint": "Am76FeBu6uY1WfUCbNcFQbHjY9ZBpx3h6aNGvVnfcdb3",
+      "decimals": 9
+    },
+    {
+      "index": 2,
+      "symbol": "mSOL",
+      "mint": "EzsFCukLjDzL9S56d63GJC8RQSeXbkHvfdsCj7MjsTXa",
+      "decimals": 9
+    },
+    {
+      "index": 3,
+      "symbol": "wBTC",
+      "mint": "CySTcZAQwVYr94eipBbdafNG2r14HWG4V3d2uqHrnWpF",
+      "decimals": 8
+    },
+    {
+      "index": 4,
+      "symbol": "wETH",
+      "mint": "5EXytB4pAXAcVkGBfrSeQV8qwJspa9RMnDof9KgBfV4L",
+      "decimals": 8
+    },
+    {
+      "index": 5,
+      "symbol": "USDT",
+      "mint": "G4gk6VDpg4YVcHc31115SNPTWCaPpa1KEPqsENzyNd9e",
+      "decimals": 6
+    },
+    {
+      "index": 6,
+      "symbol": "jitoSOL",
+      "mint": "FKHdF9Q4hWCJhTyMjaYUGFEHM9fRKr8Hm4ADDYmR7FZV",
+      "decimals": 9
+    },
+    {
+      "index": 7,
+      "symbol": "PYTH",
+      "mint": "SxbahoYhAUT8Xm7iVsqSAq4kUjq2rAmxeQgWCAfV98L",
+      "decimals": 6
+    },
+    {
+      "index": 8,
+      "symbol": "bSOL",
+      "mint": "5WxD7Pc5ydn8GDLSz4L1VwEqTMi7VdsPw8s82wQhspTm",
+      "decimals": 9
+    },
+    {
+      "index": 9,
+      "symbol": "JTO",
+      "mint": "9zdA1wvboBpYY1pgwafkvwb7D44dWyA2Cf3ncwHxWQj9",
+      "decimals": 9
+    }
   ]
 }
