@@ -13,15 +13,55 @@
   "csv_dir": "./if-csv",
   "trees_dir": "./if-trees",
   "markets": [
-    { "index": 0, "symbol": "USDC", "mint": "85znjikQcEevXKWK2rdSc8PfBgHhMYrKmHiWm6d5PpFZ" },
-    { "index": 1, "symbol": "SOL", "mint": "Am76FeBu6uY1WfUCbNcFQbHjY9ZBpx3h6aNGvVnfcdb3" },
-    { "index": 2, "symbol": "mSOL", "mint": "EzsFCukLjDzL9S56d63GJC8RQSeXbkHvfdsCj7MjsTXa" },
-    { "index": 3, "symbol": "wBTC", "mint": "CySTcZAQwVYr94eipBbdafNG2r14HWG4V3d2uqHrnWpF" },
-    { "index": 4, "symbol": "wETH", "mint": "5EXytB4pAXAcVkGBfrSeQV8qwJspa9RMnDof9KgBfV4L" },
-    { "index": 5, "symbol": "USDT", "mint": "G4gk6VDpg4YVcHc31115SNPTWCaPpa1KEPqsENzyNd9e" },
-    { "index": 6, "symbol": "jitoSOL", "mint": "FKHdF9Q4hWCJhTyMjaYUGFEHM9fRKr8Hm4ADDYmR7FZV" },
-    { "index": 7, "symbol": "PYTH", "mint": "SxbahoYhAUT8Xm7iVsqSAq4kUjq2rAmxeQgWCAfV98L" },
-    { "index": 8, "symbol": "bSOL", "mint": "5WxD7Pc5ydn8GDLSz4L1VwEqTMi7VdsPw8s82wQhspTm" },
-    { "index": 9, "symbol": "JTO", "mint": "9zdA1wvboBpYY1pgwafkvwb7D44dWyA2Cf3ncwHxWQj9" }
+    {
+      "index": 0,
+      "symbol": "USDC",
+      "mint": "85znjikQcEevXKWK2rdSc8PfBgHhMYrKmHiWm6d5PpFZ"
+    },
+    {
+      "index": 1,
+      "symbol": "SOL",
+      "mint": "Am76FeBu6uY1WfUCbNcFQbHjY9ZBpx3h6aNGvVnfcdb3"
+    },
+    {
+      "index": 2,
+      "symbol": "mSOL",
+      "mint": "EzsFCukLjDzL9S56d63GJC8RQSeXbkHvfdsCj7MjsTXa"
+    },
+    {
+      "index": 3,
+      "symbol": "wBTC",
+      "mint": "CySTcZAQwVYr94eipBbdafNG2r14HWG4V3d2uqHrnWpF"
+    },
+    {
+      "index": 4,
+      "symbol": "wETH",
+      "mint": "5EXytB4pAXAcVkGBfrSeQV8qwJspa9RMnDof9KgBfV4L"
+    },
+    {
+      "index": 5,
+      "symbol": "USDT",
+      "mint": "G4gk6VDpg4YVcHc31115SNPTWCaPpa1KEPqsENzyNd9e"
+    },
+    {
+      "index": 6,
+      "symbol": "jitoSOL",
+      "mint": "FKHdF9Q4hWCJhTyMjaYUGFEHM9fRKr8Hm4ADDYmR7FZV"
+    },
+    {
+      "index": 7,
+      "symbol": "PYTH",
+      "mint": "SxbahoYhAUT8Xm7iVsqSAq4kUjq2rAmxeQgWCAfV98L"
+    },
+    {
+      "index": 8,
+      "symbol": "bSOL",
+      "mint": "5WxD7Pc5ydn8GDLSz4L1VwEqTMi7VdsPw8s82wQhspTm"
+    },
+    {
+      "index": 9,
+      "symbol": "JTO",
+      "mint": "9zdA1wvboBpYY1pgwafkvwb7D44dWyA2Cf3ncwHxWQj9"
+    }
   ]
 }

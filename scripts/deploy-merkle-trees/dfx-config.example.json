@@ -8,13 +8,11 @@
   "clawback_start_ts": 1811321499,
   "enable_slot": 465006999,
   "max_nodes_per_tree": 10000,
-  "csv_amount_unit": "cents",
   "closable": false,
   "start_airdrop_version": 0,
   "csv_dir": "./dfx-csv",
   "trees_dir": "./dfx-trees",
   "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  "decimals": 6,
   "symbol": "DFX",
   "csv_path": null
 }

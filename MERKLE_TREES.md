@@ -22,42 +22,24 @@ locked_amount = 0
 
 ## Amount Units
 
-The current parser treats `amount` and `locked_amount` as integer UI units, then multiplies by `10^decimals`.
-
-Example for USDC:
-
-```text
-CSV amount = 123
---decimals 6
-on-chain claim amount = 123_000_000
-```
-
-Example for SOL:
+Use **base-unit mode**: pass `--decimals 0` (with the default `--csv-amount-unit
+tokens`) so the CSV `amount`/`locked_amount` integers are the **exact on-chain
+claim amounts**, with no scaling and no rounding.
 
 ```text
-CSV amount = 2
---decimals 9
-on-chain claim amount = 2_000_000_000
+CSV amount = 1234560000   (1.23456 SOL on a 9-decimal mint, as raw base units)
+--decimals 0
+on-chain claim amount = 1_234_560_000 base units = 1.23456 SOL
 ```
 
-If production entitlements require fractional UI amounts, either provide base units with `--decimals 0`, or update the parser to support decimal strings safely.
+The CSV therefore holds **raw token base units**, not UI token amounts. Compute
+each entitlement in base units upstream (on-chain balances are already in base
+units) and write that integer straight into the CSV. `locked_amount` uses the
+same unit.
 
-### Fractional UI amounts via cents (recommended)
-
-Keep **`--decimals`** equal to the **SPL mint decimals** (e.g. `6` for DFX-style tokens). If integer CSV amounts are **cents** of the UI token (two decimal places), pass **`--csv-amount-unit cents`**:
-
-```text
-CSV amount = 8255   (82.55 tokens expressed as cents)
---decimals 6
---csv-amount-unit cents
-on-chain claim amount = 8255 × 10^(6−2) = 82_550_000 base units = 82.55 tokens
-```
-
-Requires mint decimals **≥ 2**. **`locked_amount`** uses the same unit.
-
-Default **`--csv-amount-unit tokens`** means integers are **whole UI tokens** (× `10^decimals`), unchanged from older behavior.
-
-`merkle-tree/convert_dfx_users_to_merkle.py` emits **cents**; use **`--decimals 6 --csv-amount-unit cents`** for a 6-decimal mint.
+The `cli` parser can also scale UI units (`--decimals <mint_decimals>`,
+optionally `--csv-amount-unit cents`), but the deploy scripts and this guide use
+base units so fractional amounts are never lost to rounding.
 
 ## Build CLI
 
@@ -77,7 +59,7 @@ target/debug/cli create-merkle-tree \
   --merkle-tree-path dfx-claim-trees/usdc \
   --max-nodes-per-tree 10000 \
   --amount 0 \
-  --decimals 6 \
+  --decimals 0 \
   --start-airdrop-version 0
 ```
 
@@ -109,7 +91,7 @@ target/debug/cli create-merkle-tree \
   --merkle-tree-path dfx-claim-trees/usdc \
   --max-nodes-per-tree 10000 \
   --amount 0 \
-  --decimals 6 \
+  --decimals 0 \
   --start-airdrop-version 0
 
 # USDC-1 market index 34, same mint but distinct distributor versions
@@ -118,7 +100,7 @@ target/debug/cli create-merkle-tree \
   --merkle-tree-path dfx-claim-trees/usdc-1 \
   --max-nodes-per-tree 10000 \
   --amount 0 \
-  --decimals 6 \
+  --decimals 0 \
   --start-airdrop-version 100
 ```
 
@@ -130,7 +112,7 @@ Before creating distributors:
 
 - confirm the CSV is authority-level, not subaccount-level
 - confirm every `locked_amount` is `0`
-- confirm token decimals match the mint
+- confirm CSV amounts are raw base units (not UI token amounts)
 - confirm output tree versions do not collide for the same mint
 - confirm each tree's `max_total_claim` matches the amount expected to fund
 - do not commit production CSVs or generated production tree JSON unless intentionally public

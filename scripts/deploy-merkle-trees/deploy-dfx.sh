@@ -26,8 +26,9 @@ Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--dry-run]
   -h, --help   Show this help
 
 The config has the same top-level shared keys as the IF config but a single
-mint/decimals/symbol (plus an optional explicit csv_path). See
-scripts/DEPLOY_SCRIPTS.md.
+mint/symbol (plus an optional explicit csv_path). The CSV carries raw on-chain
+base units (same base-unit mode as IF). See
+scripts/deploy-merkle-trees/deploy-merkle-trees.md.
 EOF
   exit 1
 }
@@ -60,13 +61,11 @@ load_shared_config "$CONFIG"
 
 # Single-mint specifics.
 MINT="$(cfg "$CONFIG" '.mint')"
-DECIMALS="$(cfg "$CONFIG" '.decimals')"
 SYMBOL="$(cfg "$CONFIG" '.symbol')"
 CSV_PATH="$(cfg "$CONFIG" '.csv_path')"
 
 [[ -n "$MINT" ]] || { echo "Config missing 'mint': $CONFIG" >&2; exit 1; }
 [[ -n "$SYMBOL" ]] || { echo "Config missing 'symbol': $CONFIG" >&2; exit 1; }
-[[ -n "$DECIMALS" ]] || { echo "Config missing 'decimals': $CONFIG" >&2; exit 1; }
 
 # DFX CSV doesn't follow the <index>-<symbol> convention; allow an explicit
 # csv_path override, falling back to <csv-dir>/<symbol>.csv.
@@ -77,7 +76,7 @@ echo "==> DFX deploy from $CONFIG"
 echo "    rpc=$RPC_URL program=$PROGRAM_ID dry-run=$DRY_RUN"
 echo
 
-deploy_market "$MINT" "$DECIMALS" "$CSV_PATH" "$TREE_DIR" "$SYMBOL"
+deploy_market "$MINT" "$CSV_PATH" "$TREE_DIR" "$SYMBOL"
 
 echo
 echo "==> Done."
