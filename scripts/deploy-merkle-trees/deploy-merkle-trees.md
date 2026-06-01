@@ -21,10 +21,18 @@ The deploy scripts do two steps per market:
 2. `new-distributor` — create the on-chain distributor(s) for those trees.
 
 The fund scripts do one step per market — `fund-all` against the trees dir —
-transferring each tree's `max_total_claim` from the funder's token account into
-the distributor vault. Funding is **idempotent**: the cli skips vaults already
-funded. The funder keypair must already hold each mint's tokens (for IF, a
-funded ATA per market mint).
+topping each distributor vault up to its remaining (unclaimed) entitlement from
+the funder's token account. The funder keypair must already hold each mint's
+tokens (for IF, a funded ATA per market mint).
+
+Funding is **idempotent, including after claiming has started**. For each vault
+the cli computes a target of `max_total_claim − total_amount_claimed` (read from
+the on-chain distributor) — the amount a fully-funded vault must hold to cover
+all *remaining* claims — and transfers only the deficit between that target and
+the vault's current balance. So a vault that is already fully funded (with or
+without prior claims) is skipped, a partially funded vault is topped up, and a
+claimed-against vault is **not** over-funded. This makes re-running safe both
+after a partial deploy/funding failure and after claiming has begun.
 
 **Out of scope (run manually):** the `verify` step and generating the input
 CSVs. See [`DEPLOY.md`](../DEPLOY.md).
@@ -150,7 +158,9 @@ the trees dir — no CSVs, vesting timestamps, or `max_nodes`.
 
 `fund-if.sh` iterates `markets[]` and prints a per-market success/fail summary
 (non-zero exit if any failed), mirroring `deploy-if.sh`. Because funding is
-idempotent, re-running after a partial failure only tops up the unfunded vaults.
+idempotent (it tops up to the remaining unclaimed entitlement — see "Scope"),
+re-running after a partial failure only funds the still-unfunded vaults, and
+re-running after claiming has begun does not over-fund.
 
 ## Dry-run
 

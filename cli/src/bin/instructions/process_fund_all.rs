@@ -47,14 +47,27 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
 
         let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
 
+        // Fund only what is still needed to cover the *remaining* (unclaimed)
+        // entitlement. A fully-funded vault holds `max_total_claim -
+        // total_amount_claimed`; claims drain the vault below that, so funding
+        // the full `max_total_claim` again would over-fund by the amount
+        // already claimed. Transferring the deficit instead keeps funding
+        // idempotent even after claiming has started.
+        let distributor_state: MerkleDistributor = program.account(distributor_pubkey).unwrap();
+        let target = merkle_tree
+            .max_total_claim
+            .checked_sub(distributor_state.total_amount_claimed)
+            .expect("total_amount_claimed exceeds max_total_claim");
+
         let token_vault_state: TokenAccount = program.account(token_vault).unwrap();
-        if token_vault_state.amount >= merkle_tree.max_total_claim {
+        if token_vault_state.amount >= target {
             println!(
                 "already fund airdrop version {}!",
                 merkle_tree.airdrop_version
             );
             continue;
         }
+        let fund_amount = target - token_vault_state.amount;
 
         let mut ixs = vec![];
 
@@ -75,7 +88,7 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
                 &token_vault,
                 &keypair.pubkey(),
                 &[],
-                merkle_tree.max_total_claim,
+                fund_amount,
             )
             .unwrap(),
         );
@@ -91,7 +104,7 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
 
         println!(
             "Successfully transfer {} to merkle tree with airdrop version {}! signature: {signature:#?}",
-            merkle_tree.max_total_claim,
+            fund_amount,
             merkle_tree.airdrop_version
         );
     }
