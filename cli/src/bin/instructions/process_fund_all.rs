@@ -54,6 +54,18 @@ pub fn process_fund_all(args: &Args, fund_all_args: &FundAllArgs) {
         // already claimed. Transferring the deficit instead keeps funding
         // idempotent even after claiming has started.
         let distributor_state: MerkleDistributor = program.account(distributor_pubkey).unwrap();
+
+        // A clawed-back distributor has had its vault drained to the clawback
+        // receiver and has both claiming and re-clawback permanently disabled.
+        // Funding it would strand the tokens, so skip it.
+        if distributor_state.clawed_back {
+            println!(
+                "skipping clawed-back airdrop version {}",
+                merkle_tree.airdrop_version
+            );
+            continue;
+        }
+
         let target = merkle_tree
             .max_total_claim
             .checked_sub(distributor_state.total_amount_claimed)

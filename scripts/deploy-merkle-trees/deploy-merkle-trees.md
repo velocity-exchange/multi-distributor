@@ -31,8 +31,10 @@ the on-chain distributor) — the amount a fully-funded vault must hold to cover
 all *remaining* claims — and transfers only the deficit between that target and
 the vault's current balance. So a vault that is already fully funded (with or
 without prior claims) is skipped, a partially funded vault is topped up, and a
-claimed-against vault is **not** over-funded. This makes re-running safe both
-after a partial deploy/funding failure and after claiming has begun.
+claimed-against vault is **not** over-funded. Clawed-back distributors are
+skipped entirely (their vaults are drained and claiming is disabled, so funding
+would only strand tokens). This makes re-running safe both after a partial
+deploy/funding failure and after claiming has begun.
 
 **Out of scope (run manually):** the `verify` step and generating the input
 CSVs. See [`DEPLOY.md`](../DEPLOY.md).
