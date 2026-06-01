@@ -10,8 +10,8 @@
   "max_nodes_per_tree": 12000,
   "closable": false,
   "start_airdrop_version": 0,
-  "csv_dir": "./if-csv",
-  "trees_dir": "./if-trees",
+  "csv_dir": "./if-csv/devnet",
+  "trees_dir": "./if-trees/devnet",
   "markets": [
     {
       "index": 0,

@@ -186,3 +186,64 @@ deploy_market() {
   echo "    -> creating distributor(s)"
   "${dist[@]}"
 }
+
+# ---------------------------------------------------------------------------
+# Fund a single market's distributor vault(s) from the funder's token account.
+# Runs `fund-all` against an already-generated trees dir: the cli iterates the
+# tree JSONs, and for each transfers max_total_claim from the funder's ATA
+# (ATA(keypair, mint)) into that tree's distributor vault. It is idempotent —
+# the cli skips any vault already funded to max_total_claim.
+#
+# The funder keypair must already hold the mint's tokens; for IF each market is
+# a distinct mint, so the funder needs a funded ATA per mint. Trees must exist
+# (run deploy first).
+#
+# Positional args:
+#   1  mint
+#   2  tree_dir
+#   3  label                 (for log lines, e.g. "0-USDC")
+#
+# Reads RPC_URL/PROGRAM_ID/KEYPAIR_PATH/PRIORITY from load_shared_config.
+# Honors DRY_RUN: when "1", prints the command instead of running it. In
+# non-dry-run mode the trees dir must exist; under dry-run it's only warned.
+# ---------------------------------------------------------------------------
+fund_market() {
+  local mint="$1" tree_dir="$2" label="$3"
+  local rpc_url="$RPC_URL" program_id="$PROGRAM_ID" keypair_path="$KEYPAIR_PATH"
+  local priority="$PRIORITY"
+
+  echo "==> [$label] fund mint=$mint"
+  echo "    trees: $tree_dir"
+
+  if [[ ! -d "$tree_dir" ]]; then
+    if [[ "${DRY_RUN:-0}" == "1" ]]; then
+      echo "    WARNING: trees dir not found (dry-run, continuing): $tree_dir" >&2
+    else
+      echo "    ERROR: trees dir not found (generate trees first): $tree_dir" >&2
+      return 1
+    fi
+  fi
+
+  local -a priority_flag=()
+  [[ -n "$priority" ]] && priority_flag=(--priority "$priority")
+
+  local -a fund=(
+    "$CLI"
+    --mint "$mint"
+    --rpc-url "$rpc_url"
+    --program-id "$program_id"
+    --keypair-path "$keypair_path"
+    ${priority_flag[@]+"${priority_flag[@]}"}
+    fund-all
+    --merkle-tree-path "$tree_dir"
+  )
+
+  if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    echo "    [dry-run] fund-all:"
+    printf '     '; printf ' %q' "${fund[@]}"; echo
+    return 0
+  fi
+
+  echo "    -> funding distributor vault(s)"
+  "${fund[@]}"
+}

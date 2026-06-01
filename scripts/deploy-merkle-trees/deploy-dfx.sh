@@ -70,7 +70,7 @@ CSV_PATH="$(cfg "$CONFIG" '.csv_path')"
 # DFX CSV doesn't follow the <index>-<symbol> convention; allow an explicit
 # csv_path override, falling back to <csv-dir>/<symbol>.csv.
 [[ -n "$CSV_PATH" ]] || CSV_PATH="${CSV_DIR}/${SYMBOL}.csv"
-TREE_DIR="${TREES_DIR}/${SYMBOL}"
+TREE_DIR="${TREES_DIR}"
 
 echo "==> DFX deploy from $CONFIG"
 echo "    rpc=$RPC_URL program=$PROGRAM_ID dry-run=$DRY_RUN"

@@ -1,25 +1,33 @@
 # Merkle-tree deploy scripts
 
-Config-driven wrappers around the `cli` binary that generate merkle trees and
-create on-chain distributors. Two entry points share one helper so the
-CLI-call sequence never drifts:
+Config-driven wrappers around the `cli` binary that generate merkle trees,
+create on-chain distributors, and fund their vaults. The entry points share one
+helper so the CLI-call sequence never drifts:
 
 - [`deploy-if.sh`](./deploy-if.sh) — Insurance Fund (IF): many merkle trees
   across many mints, one per spot market index (~63 markets).
 - [`deploy-dfx.sh`](./deploy-dfx.sh) — the single DFX IOU mint.
-- [`deploy-common.sh`](./deploy-common.sh) — sourced by both; holds preflight
-  checks, the `cli` path resolver, jq config readers, and the single
-  `deploy_market()` function.
+- [`fund-if.sh`](./fund-if.sh) / [`fund-dfx.sh`](./fund-dfx.sh) — fund the
+  distributor vaults created by the matching deploy script.
+- [`deploy-common.sh`](./deploy-common.sh) — sourced by all; holds preflight
+  checks, the `cli` path resolver, jq config readers, and the shared
+  `deploy_market()` and `fund_market()` functions.
 
 ## Scope
 
-Each script does two steps per market:
+The deploy scripts do two steps per market:
 
 1. `create-merkle-tree` — generate the sharded trees from the CSV.
 2. `new-distributor` — create the on-chain distributor(s) for those trees.
 
-**Out of scope (run manually):** funding the vaults (`fund-all`), the `verify`
-step, and generating the input CSVs. See [`DEPLOY.md`](../DEPLOY.md).
+The fund scripts do one step per market — `fund-all` against the trees dir —
+transferring each tree's `max_total_claim` from the funder's token account into
+the distributor vault. Funding is **idempotent**: the cli skips vaults already
+funded. The funder keypair must already hold each mint's tokens (for IF, a
+funded ATA per market mint).
+
+**Out of scope (run manually):** the `verify` step and generating the input
+CSVs. See [`DEPLOY.md`](../DEPLOY.md).
 
 ## Prerequisites
 
@@ -121,6 +129,28 @@ per-market success/fail summary (non-zero exit if any failed).
 
 The DFX CSV doesn't fit the `<index>-<symbol>` convention, so set `csv_path`
 explicitly in the config (it falls back to `<csv-dir>/<symbol>.csv`).
+
+## fund-if.sh / fund-dfx.sh
+
+Run these after the matching deploy script, once the funder keypair holds the
+relevant tokens. They reuse the same config files (no extra keys) and only need
+the trees dir — no CSVs, vesting timestamps, or `max_nodes`.
+
+```bash
+./scripts/deploy-merkle-trees/fund-if.sh  --config scripts/if-markets.json  --trees-dir ./if-trees
+./scripts/deploy-merkle-trees/fund-dfx.sh --config scripts/dfx-config.json --trees-dir ./dfx-trees
+```
+
+| Flag | Notes |
+|---|---|
+| `--config` | Same config as the matching deploy script. |
+| `--trees-dir` | Where the deploy script wrote the trees (flag > config `trees_dir` > `./if-trees` / `./dfx-trees`). IF reads `<trees-dir>/<index>-<symbol>/`; DFX reads `<trees-dir>/<symbol>/`. |
+| `--start-index N` | (IF only) Skip markets with `index < N` to resume an interrupted run. |
+| `--dry-run` | Print the `fund-all` commands instead of executing. |
+
+`fund-if.sh` iterates `markets[]` and prints a per-market success/fail summary
+(non-zero exit if any failed), mirroring `deploy-if.sh`. Because funding is
+idempotent, re-running after a partial failure only tops up the unfunded vaults.
 
 ## Dry-run
 
