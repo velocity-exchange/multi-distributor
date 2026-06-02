@@ -53,6 +53,32 @@ target/debug/cli --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 --keypair-pa
 
 See [MERKLE_TREES.md](MERKLE_TREES.md) for CSV format, amount units, and distributor-version guidance.
 
+## Deploy Scripts
+
+The raw CLI commands above work for a one-off mint. For batch deploys — especially the Insurance Fund (IF), which spans ~63 spot markets each with its own mint — use the config-driven wrappers under [`scripts/deploy-merkle-trees/`](scripts/deploy-merkle-trees/deploy-merkle-trees.md). They drive the same `cli` binary but read shared settings (RPC, program id, keypair, vesting/clawback timestamps, sharding size) from one JSON config so the CLI-call sequence never drifts between markets.
+
+- [`deploy-if.sh`](scripts/deploy-merkle-trees/deploy-if.sh) — IF: iterate `markets[]` and, per market, generate trees (`create-merkle-tree`) then create the on-chain distributor (`new-distributor`).
+- [`deploy-dfx.sh`](scripts/deploy-merkle-trees/deploy-dfx.sh) — the single DFX IOU mint, same two steps.
+- [`fund-if.sh`](scripts/deploy-merkle-trees/fund-if.sh) / [`fund-dfx.sh`](scripts/deploy-merkle-trees/fund-dfx.sh) — run `fund-all` against the generated trees to top each distributor vault up to its remaining (unclaimed) entitlement. Funding is idempotent, including after claiming has started, and skips clawed-back distributors.
+- [`deploy-common.sh`](scripts/deploy-merkle-trees/deploy-common.sh) — sourced by all four; holds preflight checks, the `cli` path resolver, jq config readers, and the shared `deploy_market()` / `fund_market()` functions.
+
+Copy an example config, fill it in (the real files are gitignored), and run:
+
+```sh
+cp scripts/deploy-merkle-trees/if-markets.example.json scripts/if-markets.json
+cp scripts/deploy-merkle-trees/dfx-config.example.json scripts/dfx-config.json
+
+# generate trees + create distributors
+./scripts/deploy-merkle-trees/deploy-if.sh  --config scripts/if-markets.json  --csv-dir ./if-csv  --trees-dir ./if-trees
+./scripts/deploy-merkle-trees/deploy-dfx.sh --config scripts/dfx-config.json --csv-dir ./dfx-csv --trees-dir ./dfx-trees
+
+# then fund the vaults
+./scripts/deploy-merkle-trees/fund-if.sh  --config scripts/if-markets.json  --trees-dir ./if-trees
+./scripts/deploy-merkle-trees/fund-dfx.sh --config scripts/dfx-config.json --trees-dir ./dfx-trees
+```
+
+Pass `--dry-run` to print the exact, copy-pasteable CLI commands without touching the chain. Trees are always generated in base-unit mode (`--csv-amount-unit tokens --decimals 0`), so each CSV integer is the exact on-chain claim amount. The `verify` step and CSV generation stay manual — see [`scripts/deploy-merkle-trees/deploy-merkle-trees.md`](scripts/deploy-merkle-trees/deploy-merkle-trees.md) for the full flag reference, config keys, and caveats, and [DEPLOY.md](DEPLOY.md) for the end-to-end runbook.
+
 ## Development With Devcontainer
 
 This repo includes a devcontainer with pinned Rust, Solana, and Anchor versions for program development.
