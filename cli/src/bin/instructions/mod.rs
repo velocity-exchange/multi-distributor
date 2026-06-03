@@ -44,3 +44,5 @@ pub mod process_set_clawback_receiver;
 pub use process_set_clawback_receiver::*;
 pub mod process_find_airdrop_version;
 pub use process_find_airdrop_version::*;
+pub mod process_aggregate_if_csvs;
+pub use process_aggregate_if_csvs::*;
