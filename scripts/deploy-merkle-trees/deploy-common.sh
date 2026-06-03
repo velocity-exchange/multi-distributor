@@ -173,6 +173,7 @@ deploy_market() {
   )
 
   if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    echo "    [dry-run] remove stale trees: rm -f ${tree_dir}/tree_*.json"
     echo "    [dry-run] create-merkle-tree:"
     printf '     '; printf ' %q' "${gen[@]}"; echo
     echo "    [dry-run] new-distributor:"
@@ -181,6 +182,12 @@ deploy_market() {
   fi
 
   mkdir -p "$tree_dir"
+  # Wipe stale tree files before regenerating. new-distributor deploys EVERY
+  # tree_*.json in this dir (it reads each file's embedded airdrop_version),
+  # so a leftover from an earlier run or CSV would be re-submitted and trip the
+  # on-chain root-mismatch guard. Regenerating from a clean slate guarantees
+  # only the current run's trees are present.
+  rm -f "${tree_dir}"/tree_*.json
   echo "    -> generating merkle trees"
   "${gen[@]}"
   echo "    -> creating distributor(s)"

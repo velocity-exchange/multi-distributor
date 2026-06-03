@@ -1,0 +1,100 @@
+{
+  "clawback_start_ts": 1780617600,
+  "closable": false,
+  "csv_dir": "./data/if-processed-csv/devnet",
+  "enable_slot": 465006999,
+  "end_vesting_ts": 1780475403,
+  "keypair_path": "~/.config/solana/distributor_deployer.json",
+  "markets": [
+    {
+      "index": 4,
+      "mint": "5EXytB4pAXAcVkGBfrSeQV8qwJspa9RMnDof9KgBfV4L",
+      "source_markets": [
+        4
+      ],
+      "symbol": "wETH"
+    },
+    {
+      "index": 8,
+      "mint": "5WxD7Pc5ydn8GDLSz4L1VwEqTMi7VdsPw8s82wQhspTm",
+      "source_markets": [
+        8
+      ],
+      "symbol": "bSOL"
+    },
+    {
+      "index": 0,
+      "mint": "85znjikQcEevXKWK2rdSc8PfBgHhMYrKmHiWm6d5PpFZ",
+      "source_markets": [
+        0,
+        10
+      ],
+      "symbol": "USDC"
+    },
+    {
+      "index": 9,
+      "mint": "9zdA1wvboBpYY1pgwafkvwb7D44dWyA2Cf3ncwHxWQj9",
+      "source_markets": [
+        9
+      ],
+      "symbol": "JTO"
+    },
+    {
+      "index": 1,
+      "mint": "Am76FeBu6uY1WfUCbNcFQbHjY9ZBpx3h6aNGvVnfcdb3",
+      "source_markets": [
+        1,
+        11
+      ],
+      "symbol": "SOL"
+    },
+    {
+      "index": 3,
+      "mint": "CySTcZAQwVYr94eipBbdafNG2r14HWG4V3d2uqHrnWpF",
+      "source_markets": [
+        3
+      ],
+      "symbol": "wBTC"
+    },
+    {
+      "index": 2,
+      "mint": "EzsFCukLjDzL9S56d63GJC8RQSeXbkHvfdsCj7MjsTXa",
+      "source_markets": [
+        2
+      ],
+      "symbol": "mSOL"
+    },
+    {
+      "index": 6,
+      "mint": "FKHdF9Q4hWCJhTyMjaYUGFEHM9fRKr8Hm4ADDYmR7FZV",
+      "source_markets": [
+        6
+      ],
+      "symbol": "jitoSOL"
+    },
+    {
+      "index": 5,
+      "mint": "G4gk6VDpg4YVcHc31115SNPTWCaPpa1KEPqsENzyNd9e",
+      "source_markets": [
+        5
+      ],
+      "symbol": "USDT"
+    },
+    {
+      "index": 7,
+      "mint": "SxbahoYhAUT8Xm7iVsqSAq4kUjq2rAmxeQgWCAfV98L",
+      "source_markets": [
+        7
+      ],
+      "symbol": "PYTH"
+    }
+  ],
+  "max_nodes_per_tree": 12000,
+  "priority": null,
+  "processed_csv_dir": "./data/if-processed-csv/devnet",
+  "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
+  "rpc_url": "https://api.devnet.solana.com",
+  "start_airdrop_version": 1,
+  "start_vesting_ts": 1780475402,
+  "trees_dir": "./data/if-trees/devnet"
+}
