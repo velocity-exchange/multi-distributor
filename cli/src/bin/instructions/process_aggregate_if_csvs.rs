@@ -61,14 +61,18 @@ pub fn aggregate_if_entries(
             .or_insert_with(|| (market.clone(), BTreeMap::new()));
 
         // Lowest-index market wins symbol/index; warn on a symbol mismatch
-        // (same mint, different label) instead of silently picking one.
+        // (same mint, different label) instead of silently picking one. Capture
+        // the kept symbol BEFORE any swap, else a lower-index market overwrites
+        // group.0 first and the comparison becomes market.symbol vs itself,
+        // silently suppressing the warning when markets arrive index-ascending.
+        let prev_symbol = group.0.symbol.clone();
         if market.index < group.0.index {
             group.0 = market.clone();
         }
-        if market.symbol != group.0.symbol {
+        if market.symbol != prev_symbol {
             eprintln!(
                 "WARNING: mint {} has conflicting symbols ('{}' vs '{}'); using '{}'",
-                market.mint, group.0.symbol, market.symbol, group.0.symbol
+                market.mint, prev_symbol, market.symbol, group.0.symbol
             );
         }
 
