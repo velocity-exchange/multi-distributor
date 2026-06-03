@@ -11,6 +11,7 @@
   "closable": false,
   "start_airdrop_version": 0,
   "csv_dir": "./if-csv/devnet",
+  "processed_csv_dir": "./if-post-csv/devnet",
   "trees_dir": "./if-trees/devnet",
   "markets": [
     {
