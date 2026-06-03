@@ -61,6 +61,14 @@ impl AirdropMerkleTree {
                 .and_modify(|n| {
                     println!("duplicate claimant {} found, combining", n.claimant);
                     n.amount = n.amount.checked_add(tree_node.amount).unwrap();
+                    // Combine locked amounts too, otherwise duplicate rows silently
+                    // drop their locked balance (keeping only the first row's).
+                    n.locked_amount = match (n.locked_amount, tree_node.locked_amount) {
+                        (Some(a), Some(b)) => Some(a.checked_add(b).unwrap()),
+                        (Some(a), None) => Some(a),
+                        (None, Some(b)) => Some(b),
+                        (None, None) => None,
+                    };
                 })
                 .or_insert_with(|| tree_node); // If not exists, insert a new entry
         }
@@ -367,6 +375,6 @@ mod tests {
         let tree = AirdropMerkleTree::new(tree_nodes, 0).unwrap();
         assert_eq!(tree.tree_nodes.len(), 2);
         assert_eq!(tree.tree_nodes[0].amount, 11);
-        assert_eq!(tree.tree_nodes[0].locked_amount, Some(10));
+        assert_eq!(tree.tree_nodes[0].locked_amount, Some(20));
     }
 }

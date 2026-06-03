@@ -59,8 +59,13 @@ target/debug/cli create-merkle-tree \
   --merkle-tree-path [MERKLE_TREE_DIR] \
   --max-nodes-per-tree 10000 \
   --amount [DEFAULT_AMOUNT_DFX_USED] \
-  --decimals [TOKEN_DECIMALS]
+  --decimals 0
 ```
+
+The CSV holds raw on-chain base units (the `prepare-*-csv.py` scripts already
+scale to base units), so use `--decimals 0` with the default
+`--csv-amount-unit tokens`. Passing the mint decimals (e.g. `6`) here would
+multiply every claim by `10^6`. See [`MERKLE_TREES.md`](MERKLE_TREES.md).
 
 The generated `tree_*.json` files contain the Merkle root, max claim amount, max node count, proofs, and `airdrop_version`. The code still uses the historical name `airdrop_version`; operationally this is the distributor version.
 

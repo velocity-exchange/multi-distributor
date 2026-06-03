@@ -3,18 +3,35 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from '@solana/sp
 import { Connection, PublicKey, SystemProgram, TransactionInstruction } from '@solana/web3.js';
 import { MerkleDistributor, IDL } from '../../target/types/merkle_distributor';
 
+/**
+ * Canonical total DFX distribution — the source of truth for the supply constant.
+ *
+ * Derived from the actual mainnet distribution CSV (sum of the `amount` column),
+ * not a hand-entered figure. Any doc/test referencing 290,000,000 is stale.
+ *
+ * - DFX_TOTAL_SUPPLY_BASE_UNITS: exact sum in on-chain base units (6-decimal mint).
+ * - DFX_TOTAL_SUPPLY_UI: the same value as whole DFX (~263,250,131.94).
+ */
+export const DFX_TOTAL_SUPPLY_BASE_UNITS = new BN('263250131935926');
+export const DFX_TOTAL_SUPPLY_UI = 263_250_131.94;
+
+// On-chain token amounts are u64 and can exceed Number.MAX_SAFE_INTEGER (2^53 - 1).
+// They are encoded as decimal strings in API responses and parsed into BN before use,
+// so no precision is lost. Timestamps, slots, versions, and node counts stay `number`
+// (well within the safe-integer range).
+
 export interface UserProof {
   merkleTree: string;
-  amount: number;
+  amount: string;
   proof: number[][];
 }
 
 export interface ClaimStatusResp {
   claimant: PublicKey;
-  lockedAmount: number;
-  lockedAmountWithdrawn: number;
-  unlockedAmount: number;
-  unlockedAmountClaimed: number;
+  lockedAmount: string;
+  lockedAmountWithdrawn: string;
+  unlockedAmount: string;
+  unlockedAmountClaimed: string;
   closable: boolean;
   distributor: PublicKey;
 }
@@ -26,14 +43,14 @@ export interface EligibilityResp {
   start_ts: number;
   end_ts: number;
   proof: number[][];
-  start_amount: number;
-  end_amount: number;
-  claimed_amount: number;
-  unvested_amount: number;
-  locked_amount: number;
-  claimable_amount: number;
-  unlocked_amount_claimed: number;
-  locked_amount_withdrawn: number;
+  start_amount: string;
+  end_amount: string;
+  claimed_amount: string;
+  unvested_amount: string;
+  locked_amount: string;
+  claimable_amount: string;
+  unlocked_amount_claimed: string;
+  locked_amount_withdrawn: string;
 }
 
 export interface UserNotFoundResp {
@@ -45,10 +62,10 @@ export interface MerkleDistributorResp {
   version: number;
   mint: string;
   tokenVault: string;
-  maxTotalClaim: number;
+  maxTotalClaim: string;
   maxNumNodes: number;
-  totalAmountClaimed: number;
-  totalAmountForgone: number;
+  totalAmountClaimed: string;
+  totalAmountForgone: string;
   numNodesClaimed: number;
   start_ts: number;
   end_ts: number;
@@ -184,20 +201,24 @@ export default class MerkleDistributorAPI {
 
   /**
    * Calculate the amount claimable for a user based on their eligibility and the current time.
+   * Uses BN arithmetic so u64 token amounts above Number.MAX_SAFE_INTEGER stay exact.
    * @param u The user's eligibility data
    * @param nowTs The current time in seconds
-   * @returns The amount claimable for the user in raw values without decimals applied
+   * @returns The amount claimable for the user in raw base units (no decimals applied)
    */
-  static calculateClaimableAmount(u: EligibilityResp, nowTs = Date.now() / 1000): number {
+  static calculateClaimableAmount(u: EligibilityResp, nowTs = Date.now() / 1000): BN {
     if (nowTs < u.start_ts) {
-      return 0;
+      return new BN(0);
     }
     if (nowTs > u.end_ts) {
-      return 0;
+      return new BN(0);
     }
-    return Math.floor(
-      ((u.end_amount - u.start_amount) * (nowTs - u.start_ts)) / (u.end_ts - u.start_ts) + u.start_amount,
-    );
+    const startAmount = new BN(u.start_amount);
+    const endAmount = new BN(u.end_amount);
+    const elapsed = new BN(Math.floor(nowTs) - u.start_ts);
+    const duration = new BN(u.end_ts - u.start_ts);
+    // floor(((end - start) * elapsed) / duration + start)
+    return endAmount.sub(startAmount).mul(elapsed).div(duration).add(startAmount);
   }
 
   static deriveClaimStatus(claimant: PublicKey, distributor: PublicKey, programId: PublicKey) {

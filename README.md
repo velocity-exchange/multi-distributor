@@ -42,7 +42,10 @@ Build sharded Merkle trees, create distributors, fund vaults, and verify setup:
 ```sh
 cargo build
 
-target/debug/cli create-merkle-tree --csv-path merkle-tree/devnet/csv/output.csv --merkle-tree-path merkle-tree/devnet/trees --max-nodes-per-tree 12000 --amount 0 --decimals 6 --start-airdrop-version 0
+# CSV amounts are raw on-chain base units (the prepare-*-csv.py scripts already scale to base units),
+# so use --decimals 0 with the default --csv-amount-unit tokens. Passing --decimals 6 here would
+# multiply every claim by 10^6. See MERKLE_TREES.md.
+target/debug/cli create-merkle-tree --csv-path merkle-tree/devnet/csv/output.csv --merkle-tree-path merkle-tree/devnet/trees --max-nodes-per-tree 12000 --amount 0 --decimals 0 --start-airdrop-version 0
 
 target/debug/cli --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 --keypair-path ~/.config/solana/id.json --rpc-url https://api.devnet.solana.com new-distributor --start-vesting-ts 1779785439 --end-vesting-ts 1779786439 --merkle-tree-path merkle-tree/devnet/trees --clawback-start-ts 1811321499 --enable-slot 465006999
 
