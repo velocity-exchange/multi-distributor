@@ -5,7 +5,9 @@ create on-chain distributors, and fund their vaults. The entry points share one
 helper so the CLI-call sequence never drifts:
 
 - [`deploy-if.sh`](./deploy-if.sh) — Insurance Fund (IF): many merkle trees
-  across many mints, one per spot market index (~63 markets).
+  across many mints, one per spot market index (~63 markets). When markets
+  share a mint, run `cli aggregate-if-csvs` first to merge them into one
+  distributor per mint (see "aggregate-if-csvs" below).
 - [`deploy-dfx.sh`](./deploy-dfx.sh) — the single DFX IOU mint.
 - [`fund-if.sh`](./fund-if.sh) / [`fund-dfx.sh`](./fund-dfx.sh) — fund the
   distributor vaults created by the matching deploy script.
@@ -101,6 +103,48 @@ knob to misconfigure — base-unit mode is fixed in the script.
 
 Example: a claimant owed 1.23456 SOL (9 decimals) is a CSV row of `1234560000`.
 
+## aggregate-if-csvs (markets sharing a mint)
+
+Spot markets are not guaranteed to have unique mints — e.g. several markets can
+all be denominated in USDC. A claimant with entitlements in two same-mint
+markets should claim their **combined** total once, from a single distributor,
+not once per market. The `cli aggregate-if-csvs` subcommand collapses the
+per-market CSVs into **one deduped CSV per unique mint**, summing each
+claimant's `amount` *and* `locked_amount` across all markets that share a mint:
+
+```bash
+cli aggregate-if-csvs \
+  --config   scripts/if-markets.json \
+  --csv-dir  ./if-csv \
+  --out-csv-dir ./if-csv-merged \
+  --out-config  scripts/if-markets.merged.json
+```
+
+| Flag | Notes |
+|---|---|
+| `--config` | The IF config; supplies `markets[]` and (optionally) `csv_dir`. |
+| `--csv-dir` | Where per-market CSVs live (`<index>-<symbol>.csv`). Overrides the config's `csv_dir`. |
+| `--out-csv-dir` | Output dir for the merged per-mint CSVs (`<index>-<symbol>.csv`, keyed by mint). |
+| `--out-config` | Output path for the merged config: shared keys preserved, `markets[]` collapsed to one entry per mint (with a `source_markets` list for audit), and `csv_dir` repointed at `--out-csv-dir`. |
+
+Then run the normal deploy/fund flow against the **merged** config and CSV dir:
+
+```bash
+./scripts/deploy-if.sh   --config scripts/if-markets.merged.json --trees-dir ./if-trees
+./scripts/deploy-merkle-trees/fund-if.sh --config scripts/if-markets.merged.json --trees-dir ./if-trees
+```
+
+Notes:
+- Output is sorted by pubkey, so the merged CSV and resulting merkle root are
+  reproducible and diffs stay clean. There is exactly one row per claimant.
+- Merging is only sound because the vesting/clawback/enable settings are shared
+  across all markets (top-level config keys), so same-mint markets carry
+  identical distributor terms. The combined `index`/`symbol` come from the
+  lowest-index source market; a same-mint symbol mismatch logs a warning.
+- This step does the summation explicitly rather than relying on
+  `create-merkle-tree`'s duplicate-claimant combine, which sums `amount` only
+  and drops later `locked_amount`s.
+
 ## deploy-if.sh
 
 ```bash
@@ -178,9 +222,12 @@ CSVs); in a real run a missing CSV is a hard error.
 
 ## Caveats
 
-- Each market has a distinct mint, so `start_airdrop_version: 0` is safe per
-  market. The distributor PDA is derived from `["MerkleDistributor", mint,
-  version]`, so versions only need to be unique per mint.
+- The distributor PDA is derived from `["MerkleDistributor", mint, version]`,
+  so distributor versions only need to be unique per mint. If two markets share
+  a mint, deploying both as separate distributors would either collide on
+  version `0` or need distinct versions — run `aggregate-if-csvs` first
+  (above) so each unique mint maps to exactly one distributor and
+  `start_airdrop_version: 0` stays safe.
 - `--amount 0` is the per-leaf fallback; trees carry per-leaf amounts from the
   CSV, matching documented DFX usage.
 - Funding and verification are deliberately manual — confirm on-chain fields
