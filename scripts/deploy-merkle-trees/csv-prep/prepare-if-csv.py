@@ -33,27 +33,17 @@ The output filename uses the `<index>-<symbol>` convention deploy-if.sh expects
 `<index>_<symbol>`, so the underscore before the symbol is rewritten to a dash.
 
 Usage:
-    ./prepare-if-csv.py
     ./prepare-if-csv.py --src <snapshots-dir> --out-dir <if-csv-dir>
-    ./prepare-if-csv.py --only 0,1,5        # restrict to specific market indexes
+    ./prepare-if-csv.py --src <snapshots-dir> --out-dir <if-csv-dir> --only 0,1,5
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import os
 import re
 import sys
 from pathlib import Path
-
-# Defaults wired to the on-disk layout so the script "just works" from anywhere.
-DEFAULT_SRC = Path(
-    "/Users/chestersim/Desktop/dfx-calculation/insurance-fund/snapshots"
-)
-DEFAULT_OUT = Path(
-    "/Users/chestersim/Desktop/multi-distributor/scripts/deploy-merkle-trees/if-csv"
-)
 
 # Source filename: "<index>_<symbol>.csv" — index is leading digits, the rest
 # (after the first underscore) is the symbol, which may itself contain
@@ -108,10 +98,10 @@ def convert_file(src_path: Path, out_dir: Path) -> tuple[str, int, int, int]:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--src", type=Path, default=DEFAULT_SRC,
-                        help=f"source snapshots dir (default: {DEFAULT_SRC})")
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT,
-                        help=f"output dir for deploy CSVs (default: {DEFAULT_OUT})")
+    parser.add_argument("--src", type=Path, required=True,
+                        help="source snapshots dir (one <index>_<symbol>.csv per market)")
+    parser.add_argument("--out-dir", type=Path, required=True,
+                        help="output dir for deploy CSVs (<index>-<symbol>.csv per market)")
     parser.add_argument("--only", default=None,
                         help="comma-separated market indexes to convert (default: all)")
     args = parser.parse_args(argv)

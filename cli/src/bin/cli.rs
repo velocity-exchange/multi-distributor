@@ -128,6 +128,10 @@ pub enum Commands {
 
     /// Iteratively find airdrop version (PDA that don't exist yet)
     FindAirdropVersion(FindAirdropVersionArgs),
+
+    /// Aggregate per-market IF CSVs into one deduped CSV per unique mint,
+    /// summing each claimant's amount + locked_amount across same-mint markets.
+    AggregateIfCsvs(AggregateIfCsvsArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -269,7 +273,7 @@ pub struct CreateMerkleTreeArgs {
     /// Interpret CSV `amount` / `locked_amount` as tokens or cents (see MERKLE_TREES.md).
     #[clap(long, env, value_enum, default_value_t = CsvAmountUnitCli::Tokens)]
     pub csv_amount_unit: CsvAmountUnitCli,
-    
+
     /// Optional starting airdrop version. If not provided, will auto-detect next available version
     #[clap(long, env)]
     pub start_airdrop_version: Option<u64>,
@@ -374,6 +378,27 @@ pub struct FilterAndMergeListArgs {
     pub amount: u64,
     #[clap(long, env)]
     pub destination_path: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct AggregateIfCsvsArgs {
+    /// IF config JSON (same file deploy-if.sh consumes): supplies markets[] and,
+    /// optionally, csv_dir.
+    #[clap(long, env)]
+    pub config: PathBuf,
+
+    /// Directory holding per-market CSVs (<index>-<symbol>.csv). Overrides the
+    /// config's csv_dir; required if the config has none.
+    #[clap(long, env)]
+    pub csv_dir: Option<PathBuf>,
+
+    /// Output directory for the merged per-mint CSVs.
+    #[clap(long, env)]
+    pub out_csv_dir: PathBuf,
+
+    /// Output path for the merged per-mint config JSON.
+    #[clap(long, env)]
+    pub out_config: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -512,6 +537,9 @@ fn main() {
         }
         Commands::FindAirdropVersion(find_airdrop_version_args) => {
             process_find_airdrop_version(&args, find_airdrop_version_args);
+        }
+        Commands::AggregateIfCsvs(aggregate_args) => {
+            process_aggregate_if_csvs(aggregate_args);
         }
     }
 }

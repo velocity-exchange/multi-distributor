@@ -173,6 +173,7 @@ deploy_market() {
   )
 
   if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    echo "    [dry-run] remove stale trees: rm -f ${tree_dir}/tree_*.json"
     echo "    [dry-run] create-merkle-tree:"
     printf '     '; printf ' %q' "${gen[@]}"; echo
     echo "    [dry-run] new-distributor:"
@@ -181,6 +182,12 @@ deploy_market() {
   fi
 
   mkdir -p "$tree_dir"
+  # Wipe stale tree files before regenerating. new-distributor deploys EVERY
+  # tree_*.json in this dir (it reads each file's embedded airdrop_version),
+  # so a leftover from an earlier run or CSV would be re-submitted and trip the
+  # on-chain root-mismatch guard. Regenerating from a clean slate guarantees
+  # only the current run's trees are present.
+  rm -f "${tree_dir}"/tree_*.json
   echo "    -> generating merkle trees"
   "${gen[@]}"
   echo "    -> creating distributor(s)"
@@ -246,4 +253,46 @@ fund_market() {
 
   echo "    -> funding distributor vault(s)"
   "${fund[@]}"
+}
+
+# ---------------------------------------------------------------------------
+# Collapse same-mint IF markets into one CSV + one config entry per unique mint,
+# by running the cli's `aggregate-if-csvs` subcommand.
+#
+# Spot markets are NOT guaranteed to have unique mints (e.g. several USDC
+# markets). A claimant with entitlements in two same-mint markets must claim
+# their *combined* total once, from a single distributor — not once per market
+# (which would also collide on the per-mint distributor version). This sums each
+# claimant's amount AND locked_amount across same-mint markets and writes:
+#   <processed_dir>/<index>-<symbol>.csv   one deduped CSV per unique mint
+#   <processed_dir>/merged-config.json     the config with markets[] collapsed
+#                                          and csv_dir repointed at processed_dir
+#
+# Deterministic and idempotent: re-running rewrites identical files, and with
+# all-unique mints it is a pass-through (one entry per mint already). Artifacts
+# are kept (never deleted) so merged-config.json is an auditable record of
+# exactly what was deployed, and fund-if.sh reuses it.
+#
+# Sets the global MERGED_CONFIG to the written merged-config.json path.
+#
+# Positional args:
+#   1  config        source IF config
+#   2  csv_dir        where per-market CSVs live (<index>-<symbol>.csv)
+#   3  processed_dir  output dir for merged CSVs + merged-config.json
+# ---------------------------------------------------------------------------
+aggregate_if() {
+  local config="$1" csv_dir="$2" processed_dir="$3"
+  MERGED_CONFIG="${processed_dir}/merged-config.json"
+
+  echo "==> aggregating same-mint markets by mint"
+  echo "    source csv:    $csv_dir"
+  echo "    processed dir: $processed_dir"
+  echo "    merged config: $MERGED_CONFIG"
+
+  mkdir -p "$processed_dir"
+  "$CLI" aggregate-if-csvs \
+    --config "$config" \
+    --csv-dir "$csv_dir" \
+    --out-csv-dir "$processed_dir" \
+    --out-config "$MERGED_CONFIG"
 }

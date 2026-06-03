@@ -16,36 +16,47 @@ source "${SCRIPT_DIR}/deploy-common.sh"
 
 usage() {
   cat <<EOF
-Usage: $0 [--config <file>] [--trees-dir <dir>] [--start-index N] [--dry-run]
+Usage: $0 [--config <file>] [--csv-dir <dir>] [--processed-csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
 
-  --config       IF config JSON (default: scripts/if-markets.json)
-  --trees-dir    Directory holding the per-market trees. Overrides the config's
-                 trees_dir; falls back to ./if-trees if neither is set.
-                 Each market reads from <trees-dir>/<index>-<symbol>/
-  --start-index  Skip markets whose index < N (resume an interrupted run)
-  --dry-run      Print the CLI commands instead of executing them
-  -h, --help     Show this help
+  --config             IF config JSON (default: scripts/if-markets.json)
+  --csv-dir            Per-market CSVs, used only to regenerate the merged
+                       config if it is missing. Flag > config csv_dir > ./if-csv.
+  --processed-csv-dir  Where deploy-if.sh wrote merged-config.json (and the
+                       merged CSVs). Flag > config processed_csv_dir >
+                       ./if-post-csv.
+  --trees-dir          Directory holding the per-mint trees. Overrides the
+                       config's trees_dir; falls back to ./if-trees if neither
+                       is set. Each mint reads from <trees-dir>/<index>-<symbol>/
+  --start-index        Skip markets whose index < N (resume an interrupted run)
+  --dry-run            Print the CLI commands instead of executing them
+  -h, --help           Show this help
 
-Uses the same shared settings (rpc_url, program_id, keypair_path, priority) and
-markets[] array as deploy-if.sh. Funding only needs the trees dir — no CSVs,
-vesting timestamps, or max_nodes. See
+Funding operates on the SAME by-mint merged view as deploy-if.sh: it reuses the
+merged-config.json that deploy wrote under processed_csv_dir (regenerating it
+from the source CSVs only if absent), so the funded vaults line up one-to-one
+with the deployed per-mint distributors. Funding itself needs only the trees
+dir — no CSVs, vesting timestamps, or max_nodes. See
 scripts/deploy-merkle-trees/deploy-merkle-trees.md.
 EOF
   exit 1
 }
 
 CONFIG="${SCRIPT_DIR}/if-markets.json"
+CSV_DIR=""
+PROCESSED_CSV_DIR=""
 TREES_DIR=""
 START_INDEX=""
 DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --config)      CONFIG="$2"; shift 2 ;;
-    --trees-dir)   TREES_DIR="$2"; shift 2 ;;
-    --start-index) START_INDEX="$2"; shift 2 ;;
-    --dry-run)     DRY_RUN=1; shift ;;
-    -h|--help)     usage ;;
+    --config)            CONFIG="$2"; shift 2 ;;
+    --csv-dir)           CSV_DIR="$2"; shift 2 ;;
+    --processed-csv-dir) PROCESSED_CSV_DIR="$2"; shift 2 ;;
+    --trees-dir)         TREES_DIR="$2"; shift 2 ;;
+    --start-index)       START_INDEX="$2"; shift 2 ;;
+    --dry-run)           DRY_RUN=1; shift ;;
+    -h|--help)           usage ;;
     *) echo "Unknown argument: $1" >&2; usage ;;
   esac
 done
@@ -54,14 +65,31 @@ export DRY_RUN
 preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
 
-# Directory precedence: CLI flag > config (trees_dir) > built-in default.
-[[ -n "$TREES_DIR" ]] || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
-[[ -n "$TREES_DIR" ]] || TREES_DIR="./if-trees"
+# Directory precedence: CLI flag > config > built-in default.
+[[ -n "$CSV_DIR" ]]           || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
+[[ -n "$CSV_DIR" ]]           || CSV_DIR="./if-csv"
+[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="$(cfg "$CONFIG" '.processed_csv_dir')"
+[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="./if-post-csv"
+[[ -n "$TREES_DIR" ]]         || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
+[[ -n "$TREES_DIR" ]]         || TREES_DIR="./if-trees"
+
+# Fund against the SAME merged-by-mint view deploy used. Prefer the durable
+# merged-config.json deploy-if.sh left under processed_csv_dir; regenerate it
+# from the source CSVs only if it's missing (deterministic, so identical).
+MERGED_CONFIG="${PROCESSED_CSV_DIR}/merged-config.json"
+if [[ -f "$MERGED_CONFIG" ]]; then
+  echo "==> reusing merged config from deploy: $MERGED_CONFIG"
+else
+  echo "==> merged config not found; regenerating from source CSVs"
+  aggregate_if "$CONFIG" "$CSV_DIR" "$PROCESSED_CSV_DIR"
+fi
+CONFIG="$MERGED_CONFIG"
+echo
 
 NUM_MARKETS="$(jq '.markets | length' "$CONFIG")"
 [[ "$NUM_MARKETS" -gt 0 ]] || { echo "Config has no markets[]: $CONFIG" >&2; exit 1; }
 
-echo "==> IF fund: $NUM_MARKETS market(s) from $CONFIG"
+echo "==> IF fund: $NUM_MARKETS unique mint(s) from $CONFIG"
 echo "    rpc=$RPC_URL program=$PROGRAM_ID dry-run=$DRY_RUN"
 echo
 

@@ -1,17 +1,18 @@
 {
   "rpc_url": "https://api.devnet.solana.com",
   "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
-  "keypair_path": "~/.config/solana/id.json",
+  "keypair_path": "~/.config/solana/distributor_deployer.json",
   "priority": null,
-  "start_vesting_ts": 1779785439,
-  "end_vesting_ts": 1779786439,
-  "clawback_start_ts": 1811321499,
+  "start_vesting_ts": 1780475402,
+  "end_vesting_ts": 1780475403,
+  "clawback_start_ts": 1780617600,
   "enable_slot": 465006999,
   "max_nodes_per_tree": 12000,
   "closable": false,
-  "start_airdrop_version": 0,
-  "csv_dir": "./if-csv/devnet",
-  "trees_dir": "./if-trees/devnet",
+  "start_airdrop_version": 1,
+  "csv_dir": "./data/if-csv/devnet",
+  "processed_csv_dir": "./data/if-processed-csv/devnet",
+  "trees_dir": "./data/if-trees/devnet",
   "markets": [
     {
       "index": 0,
@@ -62,6 +63,16 @@
       "index": 9,
       "symbol": "JTO",
       "mint": "9zdA1wvboBpYY1pgwafkvwb7D44dWyA2Cf3ncwHxWQj9"
+    },
+    {
+      "index": 10,
+      "symbol": "USDC-1",
+      "mint": "85znjikQcEevXKWK2rdSc8PfBgHhMYrKmHiWm6d5PpFZ"
+    },
+    {
+      "index": 11,
+      "symbol": "SOL-1",
+      "mint": "Am76FeBu6uY1WfUCbNcFQbHjY9ZBpx3h6aNGvVnfcdb3"
     }
   ]
 }
