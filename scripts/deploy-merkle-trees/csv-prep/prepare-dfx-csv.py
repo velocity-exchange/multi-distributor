@@ -82,6 +82,7 @@ def main(argv: list[str]) -> int:
     rows_out = 0
     dropped_nonpos = 0
     dropped_fractional = 0
+    dropped_min = 0
     total_base = 0
 
     with args.src.open(newline="") as fin, out_path.open("w", newline="") as fout:
@@ -120,6 +121,9 @@ def main(argv: list[str]) -> int:
             if amount <= 0:
                 dropped_nonpos += 1
                 continue
+            if amount < 10000:
+                dropped_min += 1
+                continue
             writer.writerow([authority, amount, 0])
             rows_out += 1
             total_base += amount
@@ -127,6 +131,8 @@ def main(argv: list[str]) -> int:
     print(f"==> DFX CSV prep: {args.src} -> {out_path}")
     print(f"    decimals={args.decimals}  rows_in={rows_in}  claimants={rows_out}")
     print(f"    dropped (non-positive): {dropped_nonpos}")
+    if dropped_min:
+        print(f"    dropped (< 10000 base units): {dropped_min}")
     if dropped_fractional:
         print(f"    WARNING: {dropped_fractional} row(s) had sub-base-unit precision "
               f"and were truncated (decimals={args.decimals} too coarse?)", file=sys.stderr)
