@@ -46,21 +46,16 @@ import sys
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-# Defaults wired to the on-disk layout so the script "just works" from anywhere.
-DEFAULT_SRC = Path("/Users/chestersim/Desktop/dfx-calculation/dfx/dfx-snapshot.csv")
-DEFAULT_OUT = Path(
-    "/Users/chestersim/Desktop/multi-distributor/scripts/deploy-merkle-trees/dfx-csv"
-)
 DEFAULT_DECIMALS = 6  # DFX IOU mint decimals (README: "USD with 6 decimals").
 DEFAULT_SYMBOL = "DFX"
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--src", type=Path, default=DEFAULT_SRC,
-                        help=f"source dfx-snapshot.csv (default: {DEFAULT_SRC})")
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT,
-                        help=f"output dir for the deploy CSV (default: {DEFAULT_OUT})")
+    parser.add_argument("--src", type=Path, required=True,
+                        help="source dfx-snapshot.csv")
+    parser.add_argument("--out-dir", type=Path, required=True,
+                        help="output dir for the deploy CSV")
     parser.add_argument("--symbol", default=DEFAULT_SYMBOL,
                         help=f"output filename stem, <symbol>.csv (default: {DEFAULT_SYMBOL})")
     parser.add_argument("--decimals", type=int, default=DEFAULT_DECIMALS,
