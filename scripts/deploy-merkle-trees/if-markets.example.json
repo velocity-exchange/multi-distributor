@@ -3,15 +3,13 @@
   "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
   "keypair_path": "~/.config/solana/distributor_deployer.json",
   "priority": null,
-  "start_vesting_ts": 1780475402,
-  "end_vesting_ts": 1780475403,
-  "clawback_start_ts": 1780617600,
+  "start_vesting_ts": 1780902000,
+  "clawback_start_ts": 1812438000,
   "enable_slot": 465006999,
   "max_nodes_per_tree": 12000,
   "closable": false,
-  "start_airdrop_version": 1,
+  "start_airdrop_version": 2,
   "csv_dir": "./data/if-csv/devnet",
-  "processed_csv_dir": "./data/if-processed-csv/devnet",
   "trees_dir": "./data/if-trees/devnet",
   "markets": [
     {

@@ -77,16 +77,14 @@ Shared top-level keys (both configs):
 | `max_nodes_per_tree`    | Tree sharding size (e.g. `10000`).                                                                                                                                                                  |
 | `closable`              | Boolean; `true` passes `--closable` to `new-distributor`.                                                                                                                                           |
 | `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version.                                                                                      |
-| `csv_dir`               | Directory holding the input CSVs. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX).                                                                 |
-| `processed_csv_dir`     | (IF only) Where by-mint aggregation writes its merged CSVs + `merged-config.json`. The `--processed-csv-dir` flag overrides it; omit both to fall back to `./if-post-csv`. See "Same-mint markets". |
+| `csv_dir`               | Base CSV directory. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX). For IF, source CSVs are read from `<csv_dir>/raw/` and by-mint aggregation writes to `<csv_dir>/processed/` — see "Same-mint markets". |
 | `trees_dir`             | Output directory for generated trees. The `--trees-dir` flag overrides it; omit both to fall back to `./if-trees` (IF) / `./dfx-trees` (DFX).                                                       |
 
 `rpc_url`, `program_id`, `keypair_path`, `start_vesting_ts`,
 `clawback_start_ts`, `enable_slot`, and `max_nodes_per_tree` are required — a
 missing one fails preflight with a clear message rather than mid-deploy.
 `end_vesting_ts` is not required: it is always derived as `start_vesting_ts + 1`.
-`csv_dir`/`processed_csv_dir`/`trees_dir` are optional (flag > config > built-in
-default).
+`csv_dir`/`trees_dir` are optional (flag > config > built-in default).
 
 IF config adds a `markets` array; each entry has `index`, `symbol`, `mint`. DFX
 config instead has a single `mint`, `symbol`, and an optional `csv_path`.
@@ -121,13 +119,14 @@ _and_ `locked_amount` across all markets sharing a mint — and writes a merged
 config. The scripts then deploy/fund from that merged config, producing one
 distributor per mint. The merge is a **no-op when every mint is already unique**.
 
-`processed_csv_dir` (config key, or `--processed-csv-dir`) controls where the
-artifacts land (default `./if-post-csv`):
+The CSV base (`csv_dir`, or `--csv-dir`) splits into two subdirs: source
+per-market CSVs are read from `<csv_dir>/raw/`, and the aggregation writes its
+artifacts to `<csv_dir>/processed/`:
 
-- `<processed_csv_dir>/<index>-<symbol>.csv` — one deduped CSV per unique mint.
-- `<processed_csv_dir>/merged-config.json` — the config with `markets[]`
+- `<csv_dir>/processed/<index>-<symbol>.csv` — one deduped CSV per unique mint.
+- `<csv_dir>/processed/merged-config.json` — the config with `markets[]`
   collapsed to one entry per mint (each carries a `source_markets` audit list),
-  `csv_dir` repointed at `processed_csv_dir`.
+  `csv_dir` repointed at the processed dir.
 
 These artifacts are **kept, not deleted** — `merged-config.json` is an auditable
 record of exactly what was deployed, and `fund-if.sh` reuses it so the funded
@@ -153,8 +152,8 @@ before deploying:
 
 ```bash
 cli aggregate-if-csvs \
-  --config scripts/if-markets.json --csv-dir ./if-csv/devnet \
-  --out-csv-dir ./if-post-csv/devnet --out-config ./if-post-csv/devnet/merged-config.json
+  --config scripts/if-markets.json --csv-dir ./if-csv/devnet/raw \
+  --out-csv-dir ./if-csv/devnet/processed --out-config ./if-csv/devnet/processed/merged-config.json
 ```
 
 ## deploy-if.sh
@@ -169,8 +168,7 @@ cli aggregate-if-csvs \
 | Flag                  | Default                   | Notes                                                                                         |
 | --------------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
 | `--config`            | `scripts/if-markets.json` | IF config JSON.                                                                               |
-| `--csv-dir`           | `./if-csv`                | Per-market CSV resolves to `<csv-dir>/<index>-<symbol>.csv`.                                  |
-| `--processed-csv-dir` | `./if-post-csv`           | Where by-mint aggregation writes merged CSVs + `merged-config.json`. See "Same-mint markets". |
+| `--csv-dir`           | `./if-csv`                | Base CSV dir. Source per-market CSV resolves to `<csv-dir>/raw/<index>-<symbol>.csv`; merged output lands in `<csv-dir>/processed/`. See "Same-mint markets". |
 | `--trees-dir`         | `./if-trees`              | Per-mint trees write to `<trees-dir>/<index>-<symbol>/`.                                      |
 | `--start-index N`     | —                         | Skip markets with `index < N` (resume an interrupted run).                                    |
 | `--dry-run`           | off                       | Print the CLI commands instead of executing.                                                  |
@@ -203,9 +201,9 @@ explicitly in the config (it falls back to `<csv-dir>/<symbol>.csv`).
 
 Run these after the matching deploy script, once the funder keypair holds the
 relevant tokens. They reuse the same config files and need the trees dir; `fund-if.sh`
-also reuses the `merged-config.json` deploy wrote under `processed_csv_dir` so it
+also reuses the `merged-config.json` deploy wrote under `<csv-dir>/processed` so it
 funds the same by-mint distributors (regenerating it from the source CSVs only if
-missing — `--csv-dir`/`--processed-csv-dir` cover that case).
+missing — `--csv-dir` covers that case).
 
 ```bash
 ./scripts/deploy-merkle-trees/fund-if.sh  --config scripts/if-markets.json  --trees-dir ./if-trees
@@ -215,8 +213,7 @@ missing — `--csv-dir`/`--processed-csv-dir` cover that case).
 | Flag                  | Notes                                                                                                                                                                            |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--config`            | Same config as the matching deploy script.                                                                                                                                       |
-| `--csv-dir`           | (IF only) Source CSVs, used only to regenerate the merged config if missing (flag > config `csv_dir` > `./if-csv`).                                                              |
-| `--processed-csv-dir` | (IF only) Where deploy wrote `merged-config.json` (flag > config `processed_csv_dir` > `./if-post-csv`).                                                                         |
+| `--csv-dir`           | (IF only) Base CSV dir (flag > config `csv_dir` > `./if-csv`). Reuses `<csv-dir>/processed/merged-config.json`, regenerating it from `<csv-dir>/raw/` only if missing.           |
 | `--trees-dir`         | Where the deploy script wrote the trees (flag > config `trees_dir` > `./if-trees` / `./dfx-trees`). IF reads `<trees-dir>/<index>-<symbol>/`; DFX reads `<trees-dir>/<symbol>/`. |
 | `--start-index N`     | (IF only) Skip markets with `index < N` to resume an interrupted run.                                                                                                            |
 | `--dry-run`           | Print the `fund-all` commands instead of executing.                                                                                                                              |

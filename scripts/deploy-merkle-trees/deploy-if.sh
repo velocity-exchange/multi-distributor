@@ -14,15 +14,14 @@ source "${SCRIPT_DIR}/deploy-common.sh"
 
 usage() {
   cat <<EOF
-Usage: $0 [--config <file>] [--csv-dir <dir>] [--processed-csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
+Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
 
   --config             IF config JSON (default: scripts/if-markets.json)
-  --csv-dir            Directory holding per-market CSVs. Overrides the config's
-                       csv_dir; falls back to ./if-csv if neither is set.
-                       Each market resolves to <csv-dir>/<index>-<symbol>.csv
-  --processed-csv-dir  Where the by-mint aggregation writes its merged CSVs and
-                       merged-config.json. Overrides the config's
-                       processed_csv_dir; falls back to ./if-post-csv.
+  --csv-dir            Base CSV directory. Overrides the config's csv_dir; falls
+                       back to ./if-csv if neither is set. Source per-market CSVs
+                       are read from <csv-dir>/raw/<index>-<symbol>.csv, and the
+                       by-mint aggregation writes its merged CSVs and
+                       merged-config.json to <csv-dir>/processed/.
   --trees-dir          Output directory for trees. Overrides the config's
                        trees_dir; falls back to ./if-trees if neither is set.
                        Each mint writes to <trees-dir>/<index>-<symbol>/
@@ -47,7 +46,6 @@ EOF
 
 CONFIG="${SCRIPT_DIR}/if-markets.json"
 CSV_DIR=""
-PROCESSED_CSV_DIR=""
 TREES_DIR=""
 START_INDEX=""
 DRY_RUN=0
@@ -56,7 +54,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --config)            CONFIG="$2"; shift 2 ;;
     --csv-dir)           CSV_DIR="$2"; shift 2 ;;
-    --processed-csv-dir) PROCESSED_CSV_DIR="$2"; shift 2 ;;
     --trees-dir)         TREES_DIR="$2"; shift 2 ;;
     --start-index)       START_INDEX="$2"; shift 2 ;;
     --dry-run)           DRY_RUN=1; shift ;;
@@ -70,17 +67,20 @@ preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
 
 # Directory precedence: CLI flag > config > built-in default.
-[[ -n "$CSV_DIR" ]]           || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
-[[ -n "$CSV_DIR" ]]           || CSV_DIR="./if-csv"
-[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="$(cfg "$CONFIG" '.processed_csv_dir')"
-[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="./if-post-csv"
-[[ -n "$TREES_DIR" ]]         || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
-[[ -n "$TREES_DIR" ]]         || TREES_DIR="./if-trees"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="./if-csv"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="./if-trees"
+
+# The CSV base splits into two subdirs: raw/ holds the source per-market CSVs,
+# processed/ receives the by-mint merged CSVs + merged-config.json.
+RAW_CSV_DIR="${CSV_DIR}/raw"
+PROCESSED_CSV_DIR="${CSV_DIR}/processed"
 
 # Collapse same-mint markets into one CSV + distributor per mint, then deploy
 # from the merged config. Aggregation is a local file transform (no chain
 # writes), so it runs even under --dry-run to make the printed commands accurate.
-aggregate_if "$CONFIG" "$CSV_DIR" "$PROCESSED_CSV_DIR"
+aggregate_if "$CONFIG" "$RAW_CSV_DIR" "$PROCESSED_CSV_DIR"
 CONFIG="$MERGED_CONFIG"
 CSV_DIR="$PROCESSED_CSV_DIR"
 echo

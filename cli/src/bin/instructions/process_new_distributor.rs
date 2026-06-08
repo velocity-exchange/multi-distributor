@@ -140,8 +140,13 @@ pub fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributo
                         tx.get_signature(),
                     );
                 }
+                // Abort with a non-zero exit so callers (deploy-if.sh) see the
+                // failure instead of mistaking a swallowed error for success.
                 Err(e) => {
-                    println!("Failed to create MerkleDistributor: {:?}", e);
+                    panic!(
+                        "Failed to create MerkleDistributor version {}: {:?}",
+                        merkle_tree.airdrop_version, e
+                    );
                 }
             }
         } else {
@@ -153,8 +158,13 @@ pub fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributo
                         tx.get_signature(),
                     );
                 }
+                // Abort with a non-zero exit so callers (deploy-if.sh) see the
+                // failure instead of mistaking a swallowed error for success.
                 Err(e) => {
-                    println!("Failed to create MerkleDistributor: {:?}", e);
+                    panic!(
+                        "Failed to create MerkleDistributor version {}: {:?}",
+                        merkle_tree.airdrop_version, e
+                    );
                 }
             }
 

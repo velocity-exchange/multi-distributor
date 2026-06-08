@@ -16,14 +16,13 @@ source "${SCRIPT_DIR}/deploy-common.sh"
 
 usage() {
   cat <<EOF
-Usage: $0 [--config <file>] [--csv-dir <dir>] [--processed-csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
+Usage: $0 [--config <file>] [--csv-dir <dir>] [--trees-dir <dir>] [--start-index N] [--dry-run]
 
   --config             IF config JSON (default: scripts/if-markets.json)
-  --csv-dir            Per-market CSVs, used only to regenerate the merged
-                       config if it is missing. Flag > config csv_dir > ./if-csv.
-  --processed-csv-dir  Where deploy-if.sh wrote merged-config.json (and the
-                       merged CSVs). Flag > config processed_csv_dir >
-                       ./if-post-csv.
+  --csv-dir            Base CSV directory. Flag > config csv_dir > ./if-csv.
+                       deploy-if.sh's merged config is read from
+                       <csv-dir>/processed/merged-config.json; if it is missing
+                       it is regenerated from <csv-dir>/raw/.
   --trees-dir          Directory holding the per-mint trees. Overrides the
                        config's trees_dir; falls back to ./if-trees if neither
                        is set. Each mint reads from <trees-dir>/<index>-<symbol>/
@@ -32,7 +31,7 @@ Usage: $0 [--config <file>] [--csv-dir <dir>] [--processed-csv-dir <dir>] [--tre
   -h, --help           Show this help
 
 Funding operates on the SAME by-mint merged view as deploy-if.sh: it reuses the
-merged-config.json that deploy wrote under processed_csv_dir (regenerating it
+merged-config.json that deploy wrote under <csv-dir>/processed (regenerating it
 from the source CSVs only if absent), so the funded vaults line up one-to-one
 with the deployed per-mint distributors. Funding itself needs only the trees
 dir — no CSVs, vesting timestamps, or max_nodes. See
@@ -43,7 +42,6 @@ EOF
 
 CONFIG="${SCRIPT_DIR}/if-markets.json"
 CSV_DIR=""
-PROCESSED_CSV_DIR=""
 TREES_DIR=""
 START_INDEX=""
 DRY_RUN=0
@@ -52,7 +50,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --config)            CONFIG="$2"; shift 2 ;;
     --csv-dir)           CSV_DIR="$2"; shift 2 ;;
-    --processed-csv-dir) PROCESSED_CSV_DIR="$2"; shift 2 ;;
     --trees-dir)         TREES_DIR="$2"; shift 2 ;;
     --start-index)       START_INDEX="$2"; shift 2 ;;
     --dry-run)           DRY_RUN=1; shift ;;
@@ -66,22 +63,25 @@ preflight "$REPO_ROOT" "$CONFIG"
 load_shared_config "$CONFIG"
 
 # Directory precedence: CLI flag > config > built-in default.
-[[ -n "$CSV_DIR" ]]           || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
-[[ -n "$CSV_DIR" ]]           || CSV_DIR="./if-csv"
-[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="$(cfg "$CONFIG" '.processed_csv_dir')"
-[[ -n "$PROCESSED_CSV_DIR" ]] || PROCESSED_CSV_DIR="./if-post-csv"
-[[ -n "$TREES_DIR" ]]         || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
-[[ -n "$TREES_DIR" ]]         || TREES_DIR="./if-trees"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="$(cfg "$CONFIG" '.csv_dir')"
+[[ -n "$CSV_DIR" ]]   || CSV_DIR="./if-csv"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="$(cfg "$CONFIG" '.trees_dir')"
+[[ -n "$TREES_DIR" ]] || TREES_DIR="./if-trees"
+
+# The CSV base splits into two subdirs: raw/ holds the source per-market CSVs,
+# processed/ holds the by-mint merged CSVs + merged-config.json deploy wrote.
+RAW_CSV_DIR="${CSV_DIR}/raw"
+PROCESSED_CSV_DIR="${CSV_DIR}/processed"
 
 # Fund against the SAME merged-by-mint view deploy used. Prefer the durable
-# merged-config.json deploy-if.sh left under processed_csv_dir; regenerate it
+# merged-config.json deploy-if.sh left under processed/; regenerate it
 # from the source CSVs only if it's missing (deterministic, so identical).
 MERGED_CONFIG="${PROCESSED_CSV_DIR}/merged-config.json"
 if [[ -f "$MERGED_CONFIG" ]]; then
   echo "==> reusing merged config from deploy: $MERGED_CONFIG"
 else
   echo "==> merged config not found; regenerating from source CSVs"
-  aggregate_if "$CONFIG" "$CSV_DIR" "$PROCESSED_CSV_DIR"
+  aggregate_if "$CONFIG" "$RAW_CSV_DIR" "$PROCESSED_CSV_DIR"
 fi
 CONFIG="$MERGED_CONFIG"
 echo

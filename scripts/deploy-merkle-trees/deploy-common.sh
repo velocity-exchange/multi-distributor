@@ -284,6 +284,10 @@ fund_market() {
 #   <processed_dir>/merged-config.json     the config with markets[] collapsed
 #                                          and csv_dir repointed at processed_dir
 #
+# raw_dir and processed_dir are the raw/ and processed/ subdirs of the CSV base
+# (see deploy-if.sh): source CSVs are read from raw/, merged output lands in
+# processed/.
+#
 # Deterministic and idempotent: re-running rewrites identical files, and with
 # all-unique mints it is a pass-through (one entry per mint already). Artifacts
 # are kept (never deleted) so merged-config.json is an auditable record of
@@ -293,22 +297,22 @@ fund_market() {
 #
 # Positional args:
 #   1  config        source IF config
-#   2  csv_dir        where per-market CSVs live (<index>-<symbol>.csv)
+#   2  raw_dir        where per-market source CSVs live (<index>-<symbol>.csv)
 #   3  processed_dir  output dir for merged CSVs + merged-config.json
 # ---------------------------------------------------------------------------
 aggregate_if() {
-  local config="$1" csv_dir="$2" processed_dir="$3"
+  local config="$1" raw_dir="$2" processed_dir="$3"
   MERGED_CONFIG="${processed_dir}/merged-config.json"
 
   echo "==> aggregating same-mint markets by mint"
-  echo "    source csv:    $csv_dir"
+  echo "    raw csv:       $raw_dir"
   echo "    processed dir: $processed_dir"
   echo "    merged config: $MERGED_CONFIG"
 
   mkdir -p "$processed_dir"
   "$CLI" aggregate-if-csvs \
     --config "$config" \
-    --csv-dir "$csv_dir" \
+    --csv-dir "$raw_dir" \
     --out-csv-dir "$processed_dir" \
     --out-config "$MERGED_CONFIG"
 }
