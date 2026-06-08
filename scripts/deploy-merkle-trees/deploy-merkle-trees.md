@@ -30,7 +30,7 @@ tokens (for IF, a funded ATA per market mint).
 Funding is **idempotent, including after claiming has started**. For each vault
 the cli computes a target of `max_total_claim − total_amount_claimed` (read from
 the on-chain distributor) — the amount a fully-funded vault must hold to cover
-all *remaining* claims — and transfers only the deficit between that target and
+all _remaining_ claims — and transfers only the deficit between that target and
 the vault's current balance. So a vault that is already fully funded (with or
 without prior claims) is skipped, a partially funded vault is topped up, and a
 claimed-against vault is **not** over-funded. Clawed-back distributors are
@@ -65,25 +65,26 @@ cp scripts/dfx-config.example.json scripts/dfx-config.json
 
 Shared top-level keys (both configs):
 
-| Key | Notes |
-|---|---|
-| `rpc_url` | Solana RPC URL. |
-| `program_id` | Distributor program id. |
-| `keypair_path` | Admin/payer keypair. A leading `~` is expanded to `$HOME`. |
-| `priority` | Priority fee (microlamports), or `null` to omit `--priority`. |
-| `start_vesting_ts` / `end_vesting_ts` | Vesting window (contract requires start < end). |
-| `clawback_start_ts` | Clawback period start. |
-| `enable_slot` | Claim-open slot, or `0` for immediate. |
-| `max_nodes_per_tree` | Tree sharding size (e.g. `10000`). |
-| `closable` | Boolean; `true` passes `--closable` to `new-distributor`. |
-| `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version. |
-| `csv_dir` | Directory holding the input CSVs. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX). |
-| `processed_csv_dir` | (IF only) Where by-mint aggregation writes its merged CSVs + `merged-config.json`. The `--processed-csv-dir` flag overrides it; omit both to fall back to `./if-post-csv`. See "Same-mint markets". |
-| `trees_dir` | Output directory for generated trees. The `--trees-dir` flag overrides it; omit both to fall back to `./if-trees` (IF) / `./dfx-trees` (DFX). |
+| Key                     | Notes                                                                                                                                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rpc_url`               | Solana RPC URL.                                                                                                                                                                                     |
+| `program_id`            | Distributor program id.                                                                                                                                                                             |
+| `keypair_path`          | Admin/payer keypair. A leading `~` is expanded to `$HOME`.                                                                                                                                          |
+| `priority`              | Priority fee (microlamports), or `null` to omit `--priority`.                                                                                                                                       |
+| `start_vesting_ts`      | Vesting window start. `end_vesting_ts` is always derived as `start_vesting_ts + 1` (vesting is disabled — claims are fully unlocked at open); any `end_vesting_ts` in the config is ignored.        |
+| `clawback_start_ts`     | Clawback period start.                                                                                                                                                                              |
+| `enable_slot`           | Claim-open slot, or `0` for immediate.                                                                                                                                                              |
+| `max_nodes_per_tree`    | Tree sharding size (e.g. `10000`).                                                                                                                                                                  |
+| `closable`              | Boolean; `true` passes `--closable` to `new-distributor`.                                                                                                                                           |
+| `start_airdrop_version` | Starting distributor version (per mint; `0` is safe). Omit/`null` to let the cli auto-detect the next version.                                                                                      |
+| `csv_dir`               | Directory holding the input CSVs. The `--csv-dir` flag overrides it; omit both to fall back to `./if-csv` (IF) / `./dfx-csv` (DFX).                                                                 |
+| `processed_csv_dir`     | (IF only) Where by-mint aggregation writes its merged CSVs + `merged-config.json`. The `--processed-csv-dir` flag overrides it; omit both to fall back to `./if-post-csv`. See "Same-mint markets". |
+| `trees_dir`             | Output directory for generated trees. The `--trees-dir` flag overrides it; omit both to fall back to `./if-trees` (IF) / `./dfx-trees` (DFX).                                                       |
 
-`rpc_url`, `program_id`, `keypair_path`, `start_vesting_ts`, `end_vesting_ts`,
+`rpc_url`, `program_id`, `keypair_path`, `start_vesting_ts`,
 `clawback_start_ts`, `enable_slot`, and `max_nodes_per_tree` are required — a
 missing one fails preflight with a clear message rather than mid-deploy.
+`end_vesting_ts` is not required: it is always derived as `start_vesting_ts + 1`.
 `csv_dir`/`processed_csv_dir`/`trees_dir` are optional (flag > config > built-in
 default).
 
@@ -116,7 +117,7 @@ version).
 **`deploy-if.sh` and `fund-if.sh` handle this for you.** As their first step
 they run the `aggregate-if-csvs` cli subcommand, which collapses the per-market
 CSVs into **one deduped CSV per unique mint** — summing each claimant's `amount`
-*and* `locked_amount` across all markets sharing a mint — and writes a merged
+_and_ `locked_amount` across all markets sharing a mint — and writes a merged
 config. The scripts then deploy/fund from that merged config, producing one
 distributor per mint. The merge is a **no-op when every mint is already unique**.
 
@@ -134,6 +135,7 @@ vaults line up one-to-one with the deployed distributors (it regenerates only if
 the file is missing).
 
 Notes:
+
 - Output is sorted by pubkey, so merged CSVs and merkle roots are reproducible
   and diffs stay clean. There is exactly one row per claimant.
 - Merging is sound because vesting/clawback/enable settings are shared across
@@ -164,14 +166,14 @@ cli aggregate-if-csvs \
   --trees-dir ./if-trees
 ```
 
-| Flag | Default | Notes |
-|---|---|---|
-| `--config` | `scripts/if-markets.json` | IF config JSON. |
-| `--csv-dir` | `./if-csv` | Per-market CSV resolves to `<csv-dir>/<index>-<symbol>.csv`. |
-| `--processed-csv-dir` | `./if-post-csv` | Where by-mint aggregation writes merged CSVs + `merged-config.json`. See "Same-mint markets". |
-| `--trees-dir` | `./if-trees` | Per-mint trees write to `<trees-dir>/<index>-<symbol>/`. |
-| `--start-index N` | — | Skip markets with `index < N` (resume an interrupted run). |
-| `--dry-run` | off | Print the CLI commands instead of executing. |
+| Flag                  | Default                   | Notes                                                                                         |
+| --------------------- | ------------------------- | --------------------------------------------------------------------------------------------- |
+| `--config`            | `scripts/if-markets.json` | IF config JSON.                                                                               |
+| `--csv-dir`           | `./if-csv`                | Per-market CSV resolves to `<csv-dir>/<index>-<symbol>.csv`.                                  |
+| `--processed-csv-dir` | `./if-post-csv`           | Where by-mint aggregation writes merged CSVs + `merged-config.json`. See "Same-mint markets". |
+| `--trees-dir`         | `./if-trees`              | Per-mint trees write to `<trees-dir>/<index>-<symbol>/`.                                      |
+| `--start-index N`     | —                         | Skip markets with `index < N` (resume an interrupted run).                                    |
+| `--dry-run`           | off                       | Print the CLI commands instead of executing.                                                  |
 
 It first aggregates same-mint markets (see "Same-mint markets"), then iterates
 the merged `markets[]` (one entry per unique mint), calls `deploy_market` per
@@ -187,12 +189,12 @@ failed).
   --trees-dir ./dfx-trees
 ```
 
-| Flag | Default | Notes |
-|---|---|---|
-| `--config` | `scripts/dfx-config.json` | DFX config JSON. |
-| `--csv-dir` | `./dfx-csv` | Used only when `csv_path` is unset; resolves to `<csv-dir>/<symbol>.csv`. |
-| `--trees-dir` | `./dfx-trees` | Trees write to `<trees-dir>/<symbol>/`. |
-| `--dry-run` | off | Print the CLI commands instead of executing. |
+| Flag          | Default                   | Notes                                                                     |
+| ------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `--config`    | `scripts/dfx-config.json` | DFX config JSON.                                                          |
+| `--csv-dir`   | `./dfx-csv`               | Used only when `csv_path` is unset; resolves to `<csv-dir>/<symbol>.csv`. |
+| `--trees-dir` | `./dfx-trees`             | Trees write to `<trees-dir>/<symbol>/`.                                   |
+| `--dry-run`   | off                       | Print the CLI commands instead of executing.                              |
 
 The DFX CSV doesn't fit the `<index>-<symbol>` convention, so set `csv_path`
 explicitly in the config (it falls back to `<csv-dir>/<symbol>.csv`).
@@ -210,14 +212,14 @@ missing — `--csv-dir`/`--processed-csv-dir` cover that case).
 ./scripts/deploy-merkle-trees/fund-dfx.sh --config scripts/dfx-config.json --trees-dir ./dfx-trees
 ```
 
-| Flag | Notes |
-|---|---|
-| `--config` | Same config as the matching deploy script. |
-| `--csv-dir` | (IF only) Source CSVs, used only to regenerate the merged config if missing (flag > config `csv_dir` > `./if-csv`). |
-| `--processed-csv-dir` | (IF only) Where deploy wrote `merged-config.json` (flag > config `processed_csv_dir` > `./if-post-csv`). |
-| `--trees-dir` | Where the deploy script wrote the trees (flag > config `trees_dir` > `./if-trees` / `./dfx-trees`). IF reads `<trees-dir>/<index>-<symbol>/`; DFX reads `<trees-dir>/<symbol>/`. |
-| `--start-index N` | (IF only) Skip markets with `index < N` to resume an interrupted run. |
-| `--dry-run` | Print the `fund-all` commands instead of executing. |
+| Flag                  | Notes                                                                                                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--config`            | Same config as the matching deploy script.                                                                                                                                       |
+| `--csv-dir`           | (IF only) Source CSVs, used only to regenerate the merged config if missing (flag > config `csv_dir` > `./if-csv`).                                                              |
+| `--processed-csv-dir` | (IF only) Where deploy wrote `merged-config.json` (flag > config `processed_csv_dir` > `./if-post-csv`).                                                                         |
+| `--trees-dir`         | Where the deploy script wrote the trees (flag > config `trees_dir` > `./if-trees` / `./dfx-trees`). IF reads `<trees-dir>/<index>-<symbol>/`; DFX reads `<trees-dir>/<symbol>/`. |
+| `--start-index N`     | (IF only) Skip markets with `index < N` to resume an interrupted run.                                                                                                            |
+| `--dry-run`           | Print the `fund-all` commands instead of executing.                                                                                                                              |
 
 `fund-if.sh` iterates `markets[]` and prints a per-market success/fail summary
 (non-zero exit if any failed), mirroring `deploy-if.sh`. Because funding is

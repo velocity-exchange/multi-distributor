@@ -70,8 +70,9 @@ decimals differ.
 
 ### Caveat: empty markets
 
-Some IF markets have no positive balances and produce a header-only CSV (e.g.
-`41-PT-fragSOL-10JUL25`, the `Default_Market_Name` markets). A market with zero
-claimants cannot form a tree — **omit those indexes from `if-markets.json`'s
-`markets[]`** (or they'll fail at `create-merkle-tree`). The script prints
-`-> 0 claimants` for each so they're easy to spot.
+Some IF markets have no positive balances (e.g. `41-PT-fragSOL-10JUL25`, the
+`Default_Market_Name` markets). The script always writes a CSV for every market,
+but empty ones contain only the header row — the script prints `-> 0 claimants [empty]`
+for each so they're easy to spot. A market with zero claimants cannot form a tree —
+**omit those indexes from `if-markets.json`'s `markets[]`** (or they'll fail at
+`create-merkle-tree`, though `deploy-if.sh` will continue to the next market).

@@ -76,12 +76,28 @@ load_shared_config() {
   [[ -n "$KEYPAIR_PATH" ]]       || missing+=(keypair_path)
   [[ -n "$MAX_NODES_PER_TREE" ]] || missing+=(max_nodes_per_tree)
   [[ -n "$START_VESTING_TS" ]]   || missing+=(start_vesting_ts)
-  [[ -n "$END_VESTING_TS" ]]     || missing+=(end_vesting_ts)
   [[ -n "$CLAWBACK_START_TS" ]]  || missing+=(clawback_start_ts)
   [[ -n "$ENABLE_SLOT" ]]        || missing+=(enable_slot)
   if [[ ${#missing[@]} -gt 0 ]]; then
     echo "Config missing required key(s): ${missing[*]}" >&2
     exit 1
+  fi
+
+  # Enforce a 1-second vesting window: end_vesting_ts is always
+  # start_vesting_ts + 1, regardless of any end_vesting_ts in the config. We
+  # don't use the vesting feature, so claims should be fully unlocked the moment
+  # they open. The contract requires start_vesting_ts < end_vesting_ts, and +1 is
+  # the minimum window that satisfies it. end_vesting_ts is therefore derived,
+  # not required (or read) from the config.
+  [[ "$START_VESTING_TS" =~ ^[0-9]+$ ]] || {
+    echo "start_vesting_ts must be a non-negative integer (got: $START_VESTING_TS)" >&2
+    exit 1
+  }
+  local config_end_vesting_ts="$END_VESTING_TS"
+  END_VESTING_TS="$(( START_VESTING_TS + 1 ))"
+  if [[ -n "$config_end_vesting_ts" && "$config_end_vesting_ts" != "$END_VESTING_TS" ]]; then
+    echo "Note: ignoring config end_vesting_ts=$config_end_vesting_ts; enforcing" \
+         "end_vesting_ts=$END_VESTING_TS (start_vesting_ts + 1, no vesting)." >&2
   fi
 }
 

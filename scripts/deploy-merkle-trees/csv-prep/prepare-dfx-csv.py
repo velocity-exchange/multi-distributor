@@ -116,7 +116,7 @@ def main(argv: list[str]) -> int:
             if amount <= 0:
                 dropped_nonpos += 1
                 continue
-            if amount < 10000:
+            if amount < 10_000: # 10_000 base units is 0.01 DFX / $0.01
                 dropped_min += 1
                 continue
             writer.writerow([authority, amount, 0])
@@ -127,7 +127,7 @@ def main(argv: list[str]) -> int:
     print(f"    decimals={args.decimals}  rows_in={rows_in}  claimants={rows_out}")
     print(f"    dropped (non-positive): {dropped_nonpos}")
     if dropped_min:
-        print(f"    dropped (< 10000 base units): {dropped_min}")
+        print(f"    dropped (< 10_000 base units): {dropped_min}")
     if dropped_fractional:
         print(f"    WARNING: {dropped_fractional} row(s) had sub-base-unit precision "
               f"and were truncated (decimals={args.decimals} too coarse?)", file=sys.stderr)

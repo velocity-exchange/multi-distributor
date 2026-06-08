@@ -27,7 +27,8 @@ with columns:
 One row per authority (rows are summed if an authority appears more than once in
 a market file), `amount = sum(tokenAmount)`, `locked_amount = 0`. Rows with a
 non-positive total or an amount below 10 base units are dropped. Markets with no
-claimants after filtering produce no output file.
+claimants after filtering produce a header-only CSV (so the file always exists
+for every market, even empty ones).
 
 The output filename uses the `<index>-<symbol>` convention deploy-if.sh expects
 (it resolves each market to `<csv-dir>/<index>-<symbol>.csv`); the source uses
@@ -125,14 +126,13 @@ def convert_file(src_path: Path, out_dir: Path, decimals_map: dict[int, int]) ->
         claimants.append((authority, amount))
         rows_out += 1
 
-    if claimants:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"{label}.csv"
-        with out_path.open("w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["pubkey", "amount", "locked_amount"])
-            for authority, amount in claimants:
-                writer.writerow([authority, amount, 0])
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{label}.csv"
+    with out_path.open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["pubkey", "amount", "locked_amount"])
+        for authority, amount in claimants:
+            writer.writerow([authority, amount, 0])
 
     return label, rows_in, rows_out, dropped
 
@@ -186,8 +186,8 @@ def main(argv: list[str]) -> int:
             failed += 1
             continue
         note = f" ({dropped} dropped)" if dropped else ""
-        skipped = " [no file written]" if rows_out == 0 else ""
-        print(f"    [{label}] {rows_in} rows in -> {rows_out} claimants{note}{skipped}")
+        empty = " [empty]" if rows_out == 0 else ""
+        print(f"    [{label}] {rows_in} rows in -> {rows_out} claimants{note}{empty}")
         converted += 1
 
     print(f"==> Done: {converted} market(s) written, {failed} failed.")
