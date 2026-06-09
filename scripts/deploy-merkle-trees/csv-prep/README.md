@@ -1,10 +1,14 @@
 # CSV prep — snapshot → deploy-ready merkle CSVs
 
-The deploy scripts (`deploy-if.sh`, `deploy-dfx.sh`) deliberately leave CSV
-generation manual (see [`../deploy-merkle-trees.md`](../deploy-merkle-trees.md),
-"Out of scope"). These two scripts fill that gap: they convert the upstream
-`dfx-calculation` snapshots into the exact CSV shape `create-merkle-tree`
+Phase ② of the pipeline (see [`../README.md`](../README.md)). The deploy scripts
+(`deploy-if.sh`, `deploy-dfx.sh`) deliberately leave CSV generation manual (see
+[`../deploy-merkle-trees.md`](../deploy-merkle-trees.md), "Out of scope"). These
+two scripts fill that gap: they convert the upstream `dfx-calculation` snapshots
+(imported into this dir, phase ①) into the exact CSV shape `create-merkle-tree`
 consumes.
+
+Both scripts **require** `--src` and `--out-dir` — there are no baked-in
+defaults. Run them from `scripts/deploy-merkle-trees/` so the paths below match.
 
 ## Target format
 
@@ -23,24 +27,31 @@ Rows with a non-positive amount are dropped — nothing to claim.
 
 ## prepare-if-csv.py
 
-Source: `dfx-calculation/insurance-fund/snapshots/<index>_<symbol>.csv`
-(columns include `authority` and `tokenAmount`, the latter already raw base
-units). Output: one `<index>-<symbol>.csv` per market (underscore → dash, the
-convention `deploy-if.sh` expects).
+Source: `if-snapshots/<index>_<symbol>.csv` (imported from
+`dfx-calculation/insurance-fund/snapshots/`; columns include `authority` and
+`tokenAmount`, the latter already raw base units). Output: one
+`<index>-<symbol>.csv` per market (underscore → dash, the convention
+`deploy-if.sh` expects).
 
 `amount = sum(tokenAmount)` per authority (summed if an authority appears in
 multiple rows of one market). No unit scaling — `tokenAmount` is copied through.
+`--market-config` enables per-market min-amount thresholds from the `decimals`
+field in `if-markets.json`; without it every market uses the fallback threshold.
 
 ```bash
-./prepare-if-csv.py                       # all defaults (paths baked in)
-./prepare-if-csv.py --src <dir> --out-dir <dir>
-./prepare-if-csv.py --only 0,1,15         # specific market indexes
+# deploy-if.sh reads source CSVs from <csv-dir>/raw/, so write there:
+./csv-prep/prepare-if-csv.py --src csv-prep/if-snapshots --out-dir data/if-csv/devnet/raw
+./csv-prep/prepare-if-csv.py --src csv-prep/if-snapshots --out-dir data/if-csv/devnet/raw \
+    --market-config if-markets.json       # per-market min-amount thresholds
+./csv-prep/prepare-if-csv.py --src csv-prep/if-snapshots --out-dir data/if-csv/devnet/raw \
+    --only 0,1,15                         # specific market indexes only
 ```
 
 ## prepare-dfx-csv.py
 
-Source: `dfx-calculation/dfx/dfx-snapshot.csv` (`authority`, `total_notional` —
-USD with 6 decimals). Output: a single `<symbol>.csv` (default `DFX.csv`).
+Source: `dfx-snapshot.csv` (imported from `dfx-calculation/dfx/dfx-snapshot.csv`;
+columns `authority`, `total_notional` — USD with 6 decimals). Output: a single
+`<symbol>.csv` (default `DFX.csv`).
 
 The DFX IOU mint is a 6-decimal token pegged 1:1 to USD notional, so
 `amount = round(total_notional * 10**decimals)` with `decimals=6` — exact,
@@ -49,24 +60,29 @@ throughout (no float rounding). Override `--decimals` only if the mint's
 decimals differ.
 
 ```bash
-./prepare-dfx-csv.py                       # all defaults
-./prepare-dfx-csv.py --src <file> --out-dir <dir> --symbol DFX --decimals 6
+./csv-prep/prepare-dfx-csv.py --src csv-prep/dfx-snapshot.csv --out-dir data/dfx-csv/devnet
+./csv-prep/prepare-dfx-csv.py --src csv-prep/dfx-snapshot.csv --out-dir data/dfx-csv/devnet \
+    --symbol DFX --decimals 6
 ```
 
 ## Wiring into a deploy
 
-`prepare-dfx-csv.py` writes to `../dfx-csv/DFX.csv` and `prepare-if-csv.py` to
-`../if-csv/<index>-<symbol>.csv` by default. Point the deploy at them:
+Write the prepared CSVs to where the deploy scripts (and the example configs)
+expect them, then deploy. The example configs already set `csv_dir`/`trees_dir`
+to `./data/...`, so no `--csv-dir` is needed when run from
+`scripts/deploy-merkle-trees/`:
 
 ```bash
-# DFX: set "csv_path": ".../csv-prep/.. /dfx-csv/DFX.csv" in dfx-config.json,
-#      or pass --csv-dir.
-./scripts/deploy-dfx.sh --config scripts/dfx-config.json --dry-run
+# IF: deploy reads <csv-dir>/raw/, and the example config's csv_dir is
+#     ./data/if-csv/devnet — so prepare wrote to data/if-csv/devnet/raw/.
+./deploy-if.sh --config if-markets.json --dry-run
 
-# IF: point --csv-dir at the generated dir.
-./scripts/deploy-if.sh --config scripts/if-markets.json \
-  --csv-dir scripts/deploy-merkle-trees/if-csv --dry-run
+# DFX: the example config's csv_dir is ./data/dfx-csv/devnet and symbol is DFX,
+#      so deploy reads data/dfx-csv/devnet/DFX.csv. (Or set csv_path explicitly.)
+./deploy-dfx.sh --config dfx-config.json --dry-run
 ```
+
+See [`../README.md`](../README.md) for the full import→prepare→deploy→fund flow.
 
 ### Caveat: empty markets
 

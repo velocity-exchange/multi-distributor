@@ -1,5 +1,9 @@
 # Merkle-tree deploy scripts
 
+> **New here?** Start with [`README.md`](./README.md) for the
+> import → prepare → deploy → fund walkthrough and the directory map. This file
+> is the full reference: every flag, config key, and caveat.
+
 Config-driven wrappers around the `cli` binary that generate merkle trees,
 create on-chain distributors, and fund their vaults. The entry points share one
 helper so the CLI-call sequence never drifts:
