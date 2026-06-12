@@ -1,0 +1,15 @@
+[toolchain]
+
+[features]
+seeds = true
+skip-lint = false
+
+[programs.localnet]
+bad_debt_example = "3jFBjgMyNBTJwpELbmn6wyYJXDBZgRMYXcQMBywC9keV"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn test"
