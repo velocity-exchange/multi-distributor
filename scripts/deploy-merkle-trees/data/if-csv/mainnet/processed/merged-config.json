@@ -1,0 +1,457 @@
+{
+  "clawback_start_ts": 1812682800,
+  "closable": false,
+  "csv_dir": "./data/if-csv/mainnet/processed",
+  "enable_slot": 465006999,
+  "keypair_path": "~/.config/solana/distributor_deployer.json",
+  "markets": [
+    {
+      "index": 19,
+      "mint": "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4",
+      "source_markets": [
+        19,
+        33
+      ],
+      "symbol": "JLP"
+    },
+    {
+      "index": 22,
+      "mint": "2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo",
+      "source_markets": [
+        22
+      ],
+      "symbol": "PYUSD"
+    },
+    {
+      "index": 31,
+      "mint": "2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv",
+      "source_markets": [
+        31
+      ],
+      "symbol": "PENGU"
+    },
+    {
+      "index": 3,
+      "mint": "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+      "source_markets": [
+        3
+      ],
+      "symbol": "wBTC"
+    },
+    {
+      "index": 26,
+      "mint": "3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN",
+      "source_markets": [
+        26
+      ],
+      "symbol": "MOTHER"
+    },
+    {
+      "index": 53,
+      "mint": "59CwZq5b6drmDizgGfxECG7f16hxDpG1nXrxPoQx4y8g",
+      "source_markets": [
+        53
+      ],
+      "symbol": "sACRED-4"
+    },
+    {
+      "index": 16,
+      "mint": "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm",
+      "source_markets": [
+        16
+      ],
+      "symbol": "INF"
+    },
+    {
+      "index": 36,
+      "mint": "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+      "source_markets": [
+        36
+      ],
+      "symbol": "TRUMP"
+    },
+    {
+      "index": 20,
+      "mint": "7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr",
+      "source_markets": [
+        20
+      ],
+      "symbol": "POPCAT"
+    },
+    {
+      "index": 4,
+      "mint": "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+      "source_markets": [
+        4
+      ],
+      "symbol": "wETH"
+    },
+    {
+      "index": 13,
+      "mint": "85VBFQZC9TZkfaptBWjvUw7YbZjy52A6mjtPGjstQAmQ",
+      "source_markets": [
+        13
+      ],
+      "symbol": "W"
+    },
+    {
+      "index": 43,
+      "mint": "8H3tZ7WcgYPKEQ7fCCAFQuaNqKdMH1EtBp2ovUPpRK3k",
+      "source_markets": [
+        43
+      ],
+      "symbol": "PT-dSOL-30JUN25-3"
+    },
+    {
+      "index": 41,
+      "mint": "8adRViFUNTe3yexj2gbQtx929zBJtWJRM8TeTzYbQBgx",
+      "source_markets": [
+        41
+      ],
+      "symbol": "PT-fragSOL-10JUL25"
+    },
+    {
+      "index": 39,
+      "mint": "9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump",
+      "source_markets": [
+        39
+      ],
+      "symbol": "FARTCOIN"
+    },
+    {
+      "index": 18,
+      "mint": "A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6",
+      "source_markets": [
+        18
+      ],
+      "symbol": "USDY"
+    },
+    {
+      "index": 38,
+      "mint": "AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9",
+      "source_markets": [
+        38
+      ],
+      "symbol": "AUSD"
+    },
+    {
+      "index": 55,
+      "mint": "Aby6y5DYtTrhQD8i7JXLs4H3jdUTwSXDraYqnwn5tKbt",
+      "source_markets": [
+        55
+      ],
+      "symbol": "PT-fragSOL-31OCT25-3"
+    },
+    {
+      "index": 57,
+      "mint": "AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj",
+      "source_markets": [
+        57
+      ],
+      "symbol": "syrupUSDC"
+    },
+    {
+      "index": 25,
+      "mint": "BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85",
+      "source_markets": [
+        25
+      ],
+      "symbol": "BNSOL"
+    },
+    {
+      "index": 61,
+      "mint": "CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH",
+      "source_markets": [
+        61
+      ],
+      "symbol": "CASH"
+    },
+    {
+      "index": 21,
+      "mint": "CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu",
+      "source_markets": [
+        21
+      ],
+      "symbol": "CLOUD"
+    },
+    {
+      "index": 23,
+      "mint": "DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT",
+      "source_markets": [
+        23
+      ],
+      "symbol": "USDe"
+    },
+    {
+      "index": 32,
+      "mint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+      "source_markets": [
+        32
+      ],
+      "symbol": "Bonk"
+    },
+    {
+      "index": 15,
+      "mint": "DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7",
+      "source_markets": [
+        15
+      ],
+      "symbol": "DRIFT"
+    },
+    {
+      "index": 17,
+      "mint": "Dso1bDeDjCQxTrWHqUUi63oBvV7Mdm6WaobLbQ7gnPQ",
+      "source_markets": [
+        17
+      ],
+      "symbol": "dSOL"
+    },
+    {
+      "index": 10,
+      "mint": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+      "source_markets": [
+        10
+      ],
+      "symbol": "WIF"
+    },
+    {
+      "index": 0,
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "source_markets": [
+        0,
+        34,
+        47
+      ],
+      "symbol": "USDC"
+    },
+    {
+      "index": 24,
+      "mint": "Eh6XEPhSwoLv5wFApukmnaVSHQ6sAnoD9BmgmwQoN2sN",
+      "source_markets": [
+        24
+      ],
+      "symbol": "sUSDe"
+    },
+    {
+      "index": 5,
+      "mint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      "source_markets": [
+        5,
+        48
+      ],
+      "symbol": "USDT"
+    },
+    {
+      "index": 37,
+      "mint": "FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P",
+      "source_markets": [
+        37
+      ],
+      "symbol": "MELANIA"
+    },
+    {
+      "index": 42,
+      "mint": "FxT7bPGvkS5jKF2vgnJ16MciHqtsNqxbcWTfFg7L136h",
+      "source_markets": [
+        42
+      ],
+      "symbol": "PT-kySOL-15JUN25-3"
+    },
+    {
+      "index": 7,
+      "mint": "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
+      "source_markets": [
+        7
+      ],
+      "symbol": "PYTH"
+    },
+    {
+      "index": 35,
+      "mint": "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC",
+      "source_markets": [
+        35
+      ],
+      "symbol": "AI16Z"
+    },
+    {
+      "index": 54,
+      "mint": "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
+      "source_markets": [
+        54
+      ],
+      "symbol": "EURC"
+    },
+    {
+      "index": 6,
+      "mint": "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
+      "source_markets": [
+        6,
+        40,
+        50
+      ],
+      "symbol": "jitoSOL"
+    },
+    {
+      "index": 59,
+      "mint": "J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd",
+      "source_markets": [
+        59
+      ],
+      "symbol": "2Z"
+    },
+    {
+      "index": 11,
+      "mint": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+      "source_markets": [
+        11
+      ],
+      "symbol": "JUP"
+    },
+    {
+      "index": 58,
+      "mint": "LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY",
+      "source_markets": [
+        58
+      ],
+      "symbol": "LBTC"
+    },
+    {
+      "index": 30,
+      "mint": "MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u",
+      "source_markets": [
+        30
+      ],
+      "symbol": "ME"
+    },
+    {
+      "index": 29,
+      "mint": "METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr",
+      "source_markets": [
+        29
+      ],
+      "symbol": "META"
+    },
+    {
+      "index": 60,
+      "mint": "METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL",
+      "source_markets": [
+        60
+      ],
+      "symbol": "MET"
+    },
+    {
+      "index": 1,
+      "mint": "So11111111111111111111111111111111111111112",
+      "source_markets": [
+        1,
+        49
+      ],
+      "symbol": "SOL"
+    },
+    {
+      "index": 14,
+      "mint": "TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6",
+      "source_markets": [
+        14
+      ],
+      "symbol": "TNSR"
+    },
+    {
+      "index": 62,
+      "mint": "USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB",
+      "source_markets": [
+        62
+      ],
+      "symbol": "USD1"
+    },
+    {
+      "index": 28,
+      "mint": "USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA",
+      "source_markets": [
+        28
+      ],
+      "symbol": "USDS"
+    },
+    {
+      "index": 46,
+      "mint": "ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq",
+      "source_markets": [
+        46
+      ],
+      "symbol": "ZEUS"
+    },
+    {
+      "index": 8,
+      "mint": "bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1",
+      "source_markets": [
+        8
+      ],
+      "symbol": "bSOL"
+    },
+    {
+      "index": 27,
+      "mint": "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij",
+      "source_markets": [
+        27
+      ],
+      "symbol": "cbBTC"
+    },
+    {
+      "index": 9,
+      "mint": "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+      "source_markets": [
+        9,
+        44,
+        51
+      ],
+      "symbol": "JTO"
+    },
+    {
+      "index": 2,
+      "mint": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+      "source_markets": [
+        2
+      ],
+      "symbol": "mSOL"
+    },
+    {
+      "index": 56,
+      "mint": "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn",
+      "source_markets": [
+        56
+      ],
+      "symbol": "PUMP"
+    },
+    {
+      "index": 12,
+      "mint": "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof",
+      "source_markets": [
+        12
+      ],
+      "symbol": "RENDER"
+    },
+    {
+      "index": 52,
+      "mint": "sctmB7GPi5L2Q5G9tUSzXvhZ4YiDMEGcRov9KfArQpx",
+      "source_markets": [
+        52
+      ],
+      "symbol": "dfdvSOL"
+    },
+    {
+      "index": 45,
+      "mint": "zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg",
+      "source_markets": [
+        45
+      ],
+      "symbol": "zBTC"
+    }
+  ],
+  "max_nodes_per_tree": 12000,
+  "priority": null,
+  "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
+  "rpc_url": "https://margo-swuxg2-fast-mainnet.helius-rpc.com",
+  "start_airdrop_version": 0,
+  "start_vesting_ts": 1781146800,
+  "trees_dir": "./data/if-trees/mainnet"
+}
