@@ -35,6 +35,12 @@ The resulting mint address is what gets passed as `--mint [TOKEN_MINT]` to every
 
 The vesting fields remain available for compatibility with the original program. For DFX IOU claims, use unlocked-only trees and a far-future clawback timestamp.
 
+## Claiming From a Program (CPI)
+
+Some claimants are programs rather than wallets — the program itself owned the bad debt, so a program PDA is the claimant in the merkle tree. Since `new_claim` requires the claimant to sign, such programs claim via CPI with the PDA signing through seeds.
+
+See [`cpi-example/`](cpi-example/README.md) for a complete worked example: an Anchor program with a claim endpoint and admin-gated withdraw, admin scripts that fetch proofs from the API, and a litesvm test covering the full flow. The example is not audited and is intended as a reference — adapt the pattern into your own program rather than deploying it as-is.
+
 ## CLI
 
 Build sharded Merkle trees, create distributors, fund vaults, and verify setup:

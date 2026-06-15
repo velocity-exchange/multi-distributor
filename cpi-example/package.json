@@ -1,0 +1,24 @@
+{
+  "name": "dfx-cpi-example",
+  "private": true,
+  "scripts": {
+    "build": "anchor build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "initialize": "tsx scripts/initialize.ts",
+    "claim": "tsx scripts/claim.ts",
+    "withdraw": "tsx scripts/withdraw.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.29.0",
+    "@solana/spl-token": "0.4.14",
+    "@solana/web3.js": "1.98.4"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "litesvm": "0.8.0",
+    "tsx": "4.22.4",
+    "typescript": "5.9.3",
+    "vitest": "2.1.9"
+  }
+}
