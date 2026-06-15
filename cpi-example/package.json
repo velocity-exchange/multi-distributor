@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
-    "@solana/spl-token": "^0.4.9",
-    "@solana/web3.js": "^1.95.3"
+    "@solana/spl-token": "0.4.14",
+    "@solana/web3.js": "1.98.4"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "20.19.43",
     "litesvm": "0.8.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.0",
-    "vitest": "^2.1.0"
+    "tsx": "4.22.4",
+    "typescript": "5.9.3",
+    "vitest": "2.1.9"
   }
 }
