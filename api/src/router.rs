@@ -262,22 +262,25 @@ pub struct EligibilityResp {
     pub end_ts: i64,
     /// Claimant's proof of inclusion in the Merkle Tree
     pub proof: Vec<[u8; 32]>,
+    // Token amounts are u64/u128 on-chain and can exceed Number.MAX_SAFE_INTEGER,
+    // so they are serialized as base-10 decimal strings to match the production
+    // (Next.js) API and survive the JSON boundary without precision loss.
     /// Amount user can claim at the beginning, start_amount = amount * START_PCT
-    pub start_amount: u128,
+    pub start_amount: String,
     /// Amount user can claim at the end (max bonus)
-    pub end_amount: u128,
+    pub end_amount: String,
     /// Amount excess of end_amount that is currently locked.
-    pub unvested_amount: u128,
+    pub unvested_amount: String,
     /// Amount user has claimed, will be 0 if user has not claimed yet, this is the sum of unlocked_amount_claimed and locked_amount_withdrawn
-    pub claimed_amount: u128,
+    pub claimed_amount: String,
     /// Amount user claimed out of their unlocked portion
-    pub unlocked_amount_claimed: u128,
+    pub unlocked_amount_claimed: String,
     /// Amount user claimed out of their locked portion
-    pub locked_amount_withdrawn: u128,
+    pub locked_amount_withdrawn: String,
     /// Amount user has locked
-    pub locked_amount: u128,
+    pub locked_amount: String,
     /// Amount user has unlocked so far
-    pub claimable_amount: u128,
+    pub claimable_amount: String,
 }
 
 /// Retrieve the claim status for a user
@@ -361,22 +364,26 @@ async fn get_eligibility(
             err
         })?;
 
-    Ok(Json(EligibilityResp {
+    // The product is multi-distributor: the eligibility endpoint returns an array
+    // (one entry per distributor/mint the claimant is in). This reference server
+    // resolves a single proof per user, so the array holds one element today, but
+    // the array shape matches the production (Next.js) contract.
+    Ok(Json(vec![EligibilityResp {
         claimant: user_pubkey.clone(),
         merkle_tree: proof.merkle_tree,
         start_ts,
         end_ts,
         mint,
         proof: proof.proof,
-        start_amount,
-        end_amount: proof.amount as u128,
-        locked_amount: proof.locked_amount as u128,
-        claimable_amount: claimable_amount as u128,
-        unvested_amount: state.cache.get_unvested_amount(user_pubkey),
-        claimed_amount: (unlocked_amount_claimed + locked_amount_withdrawn) as u128,
-        unlocked_amount_claimed: unlocked_amount_claimed as u128,
-        locked_amount_withdrawn: locked_amount_withdrawn as u128,
-    }))
+        start_amount: start_amount.to_string(),
+        end_amount: (proof.amount as u128).to_string(),
+        locked_amount: (proof.locked_amount as u128).to_string(),
+        claimable_amount: (claimable_amount as u128).to_string(),
+        unvested_amount: state.cache.get_unvested_amount(user_pubkey).to_string(),
+        claimed_amount: ((unlocked_amount_claimed + locked_amount_withdrawn) as u128).to_string(),
+        unlocked_amount_claimed: (unlocked_amount_claimed as u128).to_string(),
+        locked_amount_withdrawn: (locked_amount_withdrawn as u128).to_string(),
+    }]))
 }
 
 #[derive(Serialize, Deserialize, Clone)]

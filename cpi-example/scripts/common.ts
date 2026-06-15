@@ -78,12 +78,22 @@ export function deriveClaimStatus(claimant: PublicKey, distributor: PublicKey): 
   )[0];
 }
 
+/**
+ * Fetch a claimant's eligibility entries from the distributor API.
+ *
+ * The product is multi-distributor, so the production API returns an ARRAY (one
+ * entry per distributor/mint the claimant is in). Older reference servers returned
+ * a single object; both shapes are accepted and normalized to an array here.
+ *
+ * NB: against the Next.js production server the endpoints live under `/api`, so pass
+ * `--api-url https://<host>/api`.
+ */
 export async function fetchEligibility(
   apiUrl: string,
   claimant: PublicKey,
   authUser?: string,
   authPassword?: string,
-): Promise<EligibilityResp> {
+): Promise<EligibilityResp[]> {
   const headers = new Headers();
   if (authUser && authPassword) {
     headers.set('Authorization', 'Basic ' + Buffer.from(`${authUser}:${authPassword}`).toString('base64'));
@@ -100,5 +110,34 @@ export async function fetchEligibility(
   if (!response.ok) {
     throw new Error(`eligibility request failed with status ${response.status}: ${JSON.stringify(body)}`);
   }
-  return body as EligibilityResp;
+  return Array.isArray(body) ? (body as EligibilityResp[]) : [body as EligibilityResp];
+}
+
+/**
+ * Pick a single eligibility entry from the array the API returns. When `mint` is
+ * given, selects the matching allocation; otherwise requires exactly one entry so
+ * an ambiguous multi-distributor result fails loudly instead of claiming the wrong
+ * mint.
+ */
+export function selectEligibility(entries: EligibilityResp[], mint?: string): EligibilityResp {
+  if (entries.length === 0) {
+    throw new Error('no eligibility entries returned');
+  }
+  if (mint) {
+    const match = entries.find((e) => e.mint === mint);
+    if (!match) {
+      throw new Error(
+        `no allocation for mint ${mint}; available mints: ${entries.map((e) => e.mint).join(', ')}`,
+      );
+    }
+    return match;
+  }
+  if (entries.length > 1) {
+    throw new Error(
+      `multiple allocations found — specify --mint <mint>. available mints: ${entries
+        .map((e) => e.mint)
+        .join(', ')}`,
+    );
+  }
+  return entries[0];
 }

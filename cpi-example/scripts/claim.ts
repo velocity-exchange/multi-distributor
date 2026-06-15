@@ -17,25 +17,33 @@ import {
 } from '@solana/spl-token';
 import { PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 
-import { MERKLE_DISTRIBUTOR_PROGRAM_ID, deriveClaimStatus, fetchEligibility, parseCommon } from './common';
+import {
+  MERKLE_DISTRIBUTOR_PROGRAM_ID,
+  deriveClaimStatus,
+  fetchEligibility,
+  parseCommon,
+  selectEligibility,
+} from './common';
 
 async function main() {
   const { connection, keypair, program, badDebtAuthority, values } = parseCommon({
     'api-url': { type: 'string' },
     'api-user': { type: 'string' },
     'api-password': { type: 'string' },
+    mint: { type: 'string' },
   });
   if (!values['api-url']) {
     throw new Error('--api-url <distributor api base url> is required');
   }
 
   console.log(`bad debt authority (claimant): ${badDebtAuthority.toBase58()}`);
-  const eligibility = await fetchEligibility(
+  const eligibilities = await fetchEligibility(
     values['api-url'],
     badDebtAuthority,
     values['api-user'],
     values['api-password'],
   );
+  const eligibility = selectEligibility(eligibilities, values.mint);
 
   const distributor = new PublicKey(eligibility.merkle_tree);
   const mint = new PublicKey(eligibility.mint);
