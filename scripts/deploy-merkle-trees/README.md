@@ -1,6 +1,6 @@
 # Merkle-tree deploy toolkit
 
-Turn [`drift-labs/dfx-calculation`](https://github.com/drift-labs/dfx-calculation)
+Turn [`velocity-exchange/dfx-calculation`](https://github.com/velocity-exchange/dfx-calculation)
 entitlement snapshots into funded, on-chain merkle distributors. Two flows share
 the same machinery:
 
@@ -38,7 +38,7 @@ outputs into `csv-prep/` (the copies committed here are the current snapshot —
 overwrite them to refresh):
 
 ```bash
-git clone https://github.com/drift-labs/dfx-calculation
+git clone https://github.com/velocity-exchange/dfx-calculation
 cp dfx-calculation/insurance-fund/snapshots/*.csv csv-prep/if-snapshots/   # IF
 cp dfx-calculation/dfx/dfx-snapshot.csv          csv-prep/dfx-snapshot.csv  # DFX
 ```

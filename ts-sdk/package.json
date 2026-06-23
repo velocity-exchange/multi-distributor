@@ -36,10 +36,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/drift-labs/dfx-distributor.git"
+    "url": "git+https://github.com/velocity-exchange/dfx-distributor.git"
   },
   "bugs": {
-    "url": "https://github.com/drift-labs/dfx-distributor/issues"
+    "url": "https://github.com/velocity-exchange/dfx-distributor/issues"
   },
-  "homepage": "https://github.com/drift-labs/dfx-distributor#readme"
+  "homepage": "https://github.com/velocity-exchange/dfx-distributor#readme"
 }
