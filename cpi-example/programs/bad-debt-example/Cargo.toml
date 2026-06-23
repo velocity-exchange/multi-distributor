@@ -18,7 +18,7 @@ default = []
 anchor-lang = "0.28.0"
 anchor-spl = "0.28.0"
 # When adapting this example in your own repo, replace the path dependency with:
-# merkle-distributor = { git = "https://github.com/drift-labs/multi-distributor", features = ["cpi"] }
+# merkle-distributor = { git = "https://github.com/velocity-exchange/multi-distributor", features = ["cpi"] }
 merkle-distributor = { path = "../../../programs/merkle-distributor", features = ["cpi"] }
 # Match the version the distributor program was built against (kept exact via Cargo.lock,
 # see `cargo update -p solana-program --precise 1.16.16`).
