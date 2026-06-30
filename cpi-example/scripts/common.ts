@@ -7,7 +7,7 @@ import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { IDL, BadDebtExample } from '../target/types/bad_debt_example';
 
 export const MERKLE_DISTRIBUTOR_PROGRAM_ID = new PublicKey(
-  'AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh',
+  'distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp',
 );
 export const DEFAULT_PROGRAM_ID = new PublicKey('3jFBjgMyNBTJwpELbmn6wyYJXDBZgRMYXcQMBywC9keV');
 

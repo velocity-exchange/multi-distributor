@@ -1,6 +1,6 @@
 {
   "rpc_url": "https://api.devnet.solana.com",
-  "program_id": "AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh",
+  "program_id": "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp",
   "keypair_path": "~/.config/solana/distributor_deployer.json",
   "priority": null,
   "start_vesting_ts": 1780902000,
