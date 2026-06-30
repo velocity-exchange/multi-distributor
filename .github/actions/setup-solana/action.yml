@@ -1,9 +1,12 @@
-name: "Setup Solana (1.16.x)"
+name: "Setup Solana (agave)"
 description: >
-  Install a pinned Solana CLI and a throwaway default identity, caching across
-  runs. Anchor 0.28 pairs with Solana 1.16.x, which lives on release.solana.com
-  (solana-labs) — NOT the anza-xyz/agave releases (those start at 1.18). The env
-  var SOLANA_VERSION (set at the workflow level) selects the version.
+  Install the Solana CLI (SOLANA_VERSION) via the official release.anza.xyz
+  installer, plus a throwaway default identity. We use the official installer
+  (not a raw tarball) so `agave-install` is registered: avm auto-resolves the
+  matching Solana for the Anchor toolchain and manages it through agave-install,
+  so the version installed here must equal what avm resolves (1.18.26 — the max
+  satisfying the program's `^1.16` solana-program dep) to avoid an activation
+  clash. Anchor 0.28 builds fine under Solana 1.18.
 runs:
   using: "composite"
   steps:
@@ -21,8 +24,8 @@ runs:
         set -euo pipefail
         BIN="$HOME/.local/share/solana/install/active_release/bin"
         if [ ! -x "$BIN/solana" ]; then
-          echo "Installing Solana v${SOLANA_VERSION} (release.solana.com)…"
-          sh -c "$(curl -sSfL https://release.solana.com/v${SOLANA_VERSION}/install)"
+          echo "Installing Solana v${SOLANA_VERSION} via release.anza.xyz…"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
         else
           echo "Using cached Solana at $BIN"
         fi

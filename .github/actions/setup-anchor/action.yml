@@ -1,9 +1,13 @@
 name: "Setup Anchor CLI (0.28)"
 description: >
   Install the Anchor CLI pinned by ANCHOR_VERSION (0.28.0) via avm and cache it.
-  avm and its toolchain are built with `+stable`: the repo's rust-toolchain.toml
-  pins Rust 1.70 for the *program* build, but that is too old to compile recent
-  avm — so the installer explicitly selects a newer stable toolchain.
+  We use avm rather than `cargo install anchor-cli` because anchor 0.28 cannot be
+  built fresh on a modern runner (its Cargo.lock pins wasm-bindgen 0.2.86 which
+  new Rust rejects, and unlocked it needs the fully-yanked cargo_toml ^0.13); avm
+  builds the otter-sec 0.28 fork against a self-consistent lockfile that compiles.
+  avm auto-installs the matching Solana via agave-install — setup-solana must run
+  first and install that exact version so there's no activation clash. avm itself
+  is built with `+stable` (the repo's 1.70 is too old for it).
 runs:
   using: "composite"
   steps:
@@ -18,7 +22,6 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        # Ensure a modern stable toolchain exists for building host tooling.
         rustup toolchain install stable --profile minimal --no-self-update
         if ! command -v avm >/dev/null 2>&1; then
           sudo apt-get update -y

@@ -14,14 +14,11 @@ permissions:
   contents: read
 
 env:
-  # Anchor 0.28 toolchain pins (see programs/merkle-distributor/Cargo.toml,
-  # rust-toolchain.toml, Cargo.lock → solana-program 1.16.16).
   RUST_TOOLCHAIN: "1.70.0"
-  SOLANA_VERSION: "1.16.16"
+  # Solana the Anchor 0.28 toolchain resolves (max satisfying solana-program ^1.16);
+  # avm installs it via agave-install, so setup-solana installs the same version.
+  SOLANA_VERSION: "1.18.26"
   ANCHOR_VERSION: "0.28.0"
-  # Must exist on Docker Hub and match SOLANA_VERSION — confirm the tag at
-  # https://hub.docker.com/r/solanafoundation/solana-verifiable-build/tags
-  VERIFIABLE_BUILD_IMAGE: "solanafoundation/solana-verifiable-build:1.16.16"
   # merkle_distributor program ID (same on devnet + mainnet — see Anchor.toml).
   DISTRIBUTOR_PROGRAM_ID: distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
 
