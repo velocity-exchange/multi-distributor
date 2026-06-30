@@ -20,11 +20,15 @@
  *      proposals transfer-only so they pack densely, and (c) avoids the vault
  *      needing SOL for rent. Re-running is a no-op for ATAs that already exist.
  *
- *   2. (default)       build Squads transfer proposals (mirrors fund-if-msig)
+ *   2. (default)       build ONE Squads Batch (single proposal/approval)
  *      For each holder: transfer_checked(vaultAta -> holderAta, authority=vault,
- *      amount = CSV amount + locked_amount, decimals). Chunked into batches of
- *      --batch-size, one vaultTransactionCreate + proposalCreate per batch.
- *      Refuses to propose if any destination ATA is missing (run --create-atas).
+ *      amount = CSV amount + locked_amount, decimals). All transfers go into a
+ *      single Squads `Batch` under one proposal: batchCreate + proposalCreate
+ *      (draft) -> one batchAddTransaction per inner chunk (≤ --batch-size
+ *      transfers, single-mint, so each inner tx fits the 1232-byte execute
+ *      limit) -> proposalActivate. Members approve ONCE, then execute each inner
+ *      transaction. Refuses to build if any destination ATA is missing (run
+ *      --create-atas first).
  *
  * The CSV `pubkey` is the holder's wallet (owner); the destination is its
  * Token-2022 ATA. locked_amount is 0 for every IF row, so each holder simply
@@ -128,7 +132,7 @@ async function main() {
 		.option('--create-atas', 'phase 1: create missing destination ATAs (deployer-signed, not multisig)')
 		.option('-m, --multisig <pubkey>', 'Squads V4 multisig PDA (phase 2)')
 		.option('--vault-index <n>', 'Squads vault index holding the tokens', '1')
-		.option('--batch-size <n>', 'transfers per proposal (phase 2)', '10')
+		.option('--batch-size <n>', 'transfers per inner batch-transaction (≤15 fits one execute tx)', '10')
 		.option('--ata-batch-size <n>', 'ATA creations per tx (phase 1)', '12')
 		.option('-u, --url <rpc>', 'RPC URL override (default: config.rpc_url)')
 		.option('--dry-run', 'plan + print without sending/submitting', false)
@@ -225,7 +229,7 @@ async function runCreateAtas(provider: AnchorProvider, plans: any[], opts: any) 
 	console.log(opts.dryRun ? '    (dry-run — nothing sent)' : '    next: run without --create-atas to propose the transfers');
 }
 
-// ---- Phase 2: Squads transfer proposals ------------------------------------
+// ---- Phase 2: ONE Squads Batch (single proposal) ---------------------------
 async function runPropose(provider: AnchorProvider, plans: any[], multisigPda: PublicKey, vaultPda: PublicKey, vaultIndex: number, opts: any) {
 	const { connection, wallet } = provider;
 	console.log(`    multisig  ${multisigPda.toBase58()}`);
@@ -245,52 +249,65 @@ async function runPropose(provider: AnchorProvider, plans: any[], multisigPda: P
 		if (bal < need) throw new Error(`${plan.market.symbol}: vault ATA ${plan.vaultAta.toBase58()} holds ${bal} < needed ${need}`);
 	}
 
-	let nextTxIndex = 0n;
-	if (!opts.dryRun) {
-		const ms = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
-		nextTxIndex = BigInt(ms.transactionIndex.toString()) + 1n;
-	}
-
-	const proposed: { market: string; batch: number; txIndex: bigint; sig?: string }[] = [];
+	// Build the inner batch transactions: chunk each market's holders into
+	// single-mint TransactionMessages of ≤ batch-size transfers (so each inner
+	// tx fits one ~1232-byte execute tx). All inner txs go under ONE batch.
+	type Inner = { symbol: string; count: number; total: bigint; dec: number; message: TransactionMessage };
+	const inners: Inner[] = [];
+	let grandHolders = 0;
 	for (const plan of plans) {
 		const mint = new PublicKey(plan.market.mint);
 		const dec = plan.market.decimals;
-		const batches = chunk(plan.holders, Number(opts.batchSize));
-		console.log(`==> ${plan.market.index}-${plan.market.symbol}: ${plan.holders.length} transfers in ${batches.length} proposal(s)`);
-		for (let b = 0; b < batches.length; b++) {
-			const batch = batches[b];
+		for (const batch of chunk(plan.holders, Number(opts.batchSize))) {
 			const ixs: TransactionInstruction[] = batch.map((h: any) =>
-				createTransferCheckedInstruction(
-					plan.vaultAta, mint, h.ata, vaultPda, h.amount, dec, [], TOKEN_2022_PROGRAM_ID
-				)
+				createTransferCheckedInstruction(plan.vaultAta, mint, h.ata, vaultPda, h.amount, dec, [], TOKEN_2022_PROGRAM_ID)
 			);
 			const total = batch.reduce((a: bigint, h: any) => a + h.amount, 0n);
-			const memo = `IF t22 ${plan.market.symbol} batch ${b + 1}/${batches.length} (${batch.length} holders, ${fmtAmount(total, dec)})`;
-
-			if (opts.dryRun) {
-				console.log(`    [dry-run] proposal: ${batch.length} transfers, ${fmtAmount(total, dec)} ${plan.market.symbol}`);
-				proposed.push({ market: plan.market.symbol, batch: b + 1, txIndex: -1n });
-				continue;
-			}
-
-			const txIndex = nextTxIndex++;
-			const { blockhash } = await connection.getLatestBlockhash();
-			const message = new TransactionMessage({ payerKey: vaultPda, recentBlockhash: blockhash, instructions: ixs });
-			const createIx = multisig.instructions.vaultTransactionCreate({
-				multisigPda, transactionIndex: txIndex, creator: wallet.publicKey,
-				vaultIndex, ephemeralSigners: 0, transactionMessage: message, memo,
-			});
-			const proposeIx = multisig.instructions.proposalCreate({ multisigPda, transactionIndex: txIndex, creator: wallet.publicKey });
-			const sig = await provider.sendAndConfirm(new Transaction().add(createIx, proposeIx));
-			console.log(`    ✓ batch ${b + 1}/${batches.length} txIndex=${txIndex} sig=${sig}`);
-			proposed.push({ market: plan.market.symbol, batch: b + 1, txIndex, sig });
+			// recentBlockhash is a placeholder; batchAddTransaction stores the
+			// message, it is not signed/sent as a standalone tx.
+			const message = new TransactionMessage({ payerKey: vaultPda, recentBlockhash: PublicKey.default.toBase58(), instructions: ixs });
+			inners.push({ symbol: plan.market.symbol, count: batch.length, total, dec, message });
+			grandHolders += batch.length;
 		}
-		console.log();
 	}
 
-	console.log(`==> Summary: ${proposed.length} proposal(s)`);
-	for (const p of proposed) console.log(`    ${p.market} batch ${p.batch}${p.txIndex >= 0n ? ` #${p.txIndex}` : ''}`);
-	console.log(opts.dryRun ? '    (dry-run — nothing submitted)' : '    members must approve + execute each via the Squads UI/CLI.');
+	console.log(`==> ONE batch: ${grandHolders} transfers across ${plans.length} market(s) in ${inners.length} inner transaction(s)`);
+	for (const inner of inners) console.log(`    - ${inner.symbol}: ${inner.count} transfers (${fmtAmount(inner.total, inner.dec)})`);
+	console.log();
+
+	if (opts.dryRun) {
+		console.log(`    [dry-run] would batchCreate + proposalCreate(draft) + ${inners.length}x batchAddTransaction + proposalActivate`);
+		console.log(`    (dry-run — nothing submitted)`);
+		return;
+	}
+
+	const ms = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
+	const batchIndex = BigInt(ms.transactionIndex.toString()) + 1n;
+
+	// 1. Create the batch + its proposal (as a draft so transactions can be added).
+	const createIx = multisig.instructions.batchCreate({ multisigPda, creator: wallet.publicKey, batchIndex, vaultIndex, memo: `IF Token-2022 distribution (${grandHolders} transfers)` });
+	const proposeIx = multisig.instructions.proposalCreate({ multisigPda, transactionIndex: batchIndex, creator: wallet.publicKey, isDraft: true });
+	let sig = await provider.sendAndConfirm(new Transaction().add(createIx, proposeIx));
+	console.log(`==> batchCreate + proposalCreate(draft) batchIndex=${batchIndex} sig=${sig}`);
+
+	// 2. Add each inner transaction (1-based index within the batch).
+	for (let i = 0; i < inners.length; i++) {
+		const addIx = multisig.instructions.batchAddTransaction({
+			vaultIndex, multisigPda, member: wallet.publicKey, batchIndex,
+			transactionIndex: i + 1, ephemeralSigners: 0, transactionMessage: inners[i].message,
+		});
+		sig = await provider.sendAndConfirm(new Transaction().add(addIx));
+		console.log(`    + inner ${i + 1}/${inners.length} (${inners[i].symbol}, ${inners[i].count} transfers) sig=${sig}`);
+	}
+
+	// 3. Activate the proposal so members can vote.
+	const activateIx = multisig.instructions.proposalActivate({ multisigPda, transactionIndex: batchIndex, member: wallet.publicKey });
+	sig = await provider.sendAndConfirm(new Transaction().add(activateIx));
+	console.log(`==> proposalActivate sig=${sig}`);
+
+	console.log();
+	console.log(`==> Done. ONE proposal (batchIndex ${batchIndex}) with ${inners.length} inner transactions, ${grandHolders} transfers total.`);
+	console.log(`    Members approve the single proposal, then execute each inner transaction (batchExecuteTransaction) via the Squads UI/CLI.`);
 }
 
 main().catch((e) => {

@@ -110,7 +110,7 @@ cd scripts/deploy-merkle-trees/msig-fund && npm install
 npm run distribute-t22 -- --config ../if-markets.mainnet.json \
   --keypair ~/.config/solana/id.json --all-t22 --create-atas
 
-# Phase 2 (multisig): transfer_checked proposals from vault index 1 (4JM5…).
+# Phase 2 (multisig): ONE Squads Batch with all transfers, from vault index 1 (4JM5…).
 npm run distribute-t22 -- --config ../if-markets.mainnet.json \
   --multisig 7qipzLR9j1JcvdxE1XJEFgvoyFmgBpgw5hMdHBMPcJtM --vault-index 1 \
   --keypair ~/.config/solana/<member>.json --all-t22
@@ -118,13 +118,21 @@ npm run distribute-t22 -- --config ../if-markets.mainnet.json \
 # preview either phase:  --dry-run      single market:  --market PYUSD
 ```
 
+Phase 2 builds a **single Squads `Batch` under one proposal** — members approve
+**once**, then execute each inner transaction. It does:
+`batchCreate` + `proposalCreate(draft)` → one `batchAddTransaction` per inner
+chunk → `proposalActivate`. (These setup txs are sent and paid by `--keypair`,
+not gated by the multisig.)
+
 Notes:
-- Phase 2 **refuses** to propose if any destination ATA is missing — run
+- A Solana tx caps at ~1232 bytes, so transfers are split into inner
+  transactions of `--batch-size` (default 10; ≤15 is safe). They all live under
+  the **one** batch/proposal — `--all-t22` at batch-size 10 = 1 proposal with
+  ~10 inner txs (PYUSD 4 + AI16Z 2 + CASH 2 + PUMP 1 + AUSD 1). Approve once,
+  execute ~10 times.
+- Phase 2 **refuses** to build if any destination ATA is missing — run
   `--create-atas` first. It also checks the vault holds enough of each mint.
-- Transfers are chunked into proposals of `--batch-size` (default 10), so e.g.
-  PYUSD's 40 holders become 4 proposals. Each is a normal Squads proposal the
-  3-of-5 members approve + execute.
-- `--keypair` for phase 2 must be a multisig **member** (it signs
-  `proposalCreate`); for phase 1 it's just the rent payer.
-- This is a one-shot distribution — re-running phase 2 creates **new** proposals
-  (no on-chain idempotency). Don't approve duplicates.
+- `--keypair` for phase 2 must be a multisig **member** (it signs the batch /
+  proposal instructions); for phase 1 it's just the rent payer.
+- One-shot: re-running phase 2 creates a **new** batch/proposal (no on-chain
+  idempotency). Don't approve duplicates.
