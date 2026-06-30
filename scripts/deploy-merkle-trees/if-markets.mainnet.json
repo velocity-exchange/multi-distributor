@@ -1,10 +1,10 @@
 {
   "rpc_url": "https://margo-swuxg2-fast-mainnet.helius-rpc.com",
   "program_id": "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp",
-  "keypair_path": "~/.config/solana/distributor_deployer.json",
+  "keypair_path": "~/.config/solana/id-prop.json",
   "priority": null,
-  "start_vesting_ts": 1781146800,
-  "clawback_start_ts": 1812682800,
+  "start_vesting_ts": 1782849323,
+  "clawback_start_ts": 1814400000,
   "enable_slot": 465006999,
   "max_nodes_per_tree": 12000,
   "closable": false,
