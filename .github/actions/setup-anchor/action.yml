@@ -26,7 +26,10 @@ runs:
           sudo apt-get update -y
           sudo apt-get install -y libudev-dev pkg-config build-essential
           # `+stable` overrides the repo's rust-toolchain.toml (1.70) for this build.
+          # NOT --locked: anchor 0.28's lockfile pins wasm-bindgen 0.2.86, which
+          # modern Rust rejects ("update to v0.2.88"). Letting Cargo resolve fresh
+          # deps lets it pick a compatible wasm-bindgen (this is what avm does).
           cargo +stable install --git https://github.com/coral-xyz/anchor \
-            --tag "v${ANCHOR_VERSION}" anchor-cli --locked --force
+            --tag "v${ANCHOR_VERSION}" anchor-cli --force
         fi
         anchor --version
