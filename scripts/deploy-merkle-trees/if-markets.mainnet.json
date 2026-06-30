@@ -5,7 +5,7 @@
   "priority": null,
   "start_vesting_ts": 1781146800,
   "clawback_start_ts": 1812682800,
-  "enable_slot": 465006999,
+  "enable_slot": 429952512,
   "max_nodes_per_tree": 12000,
   "closable": false,
   "start_airdrop_version": 0,
