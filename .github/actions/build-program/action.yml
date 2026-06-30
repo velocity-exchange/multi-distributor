@@ -27,7 +27,7 @@ runs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: ~/.cargo/bin/solana-verify
-        key: ${{ runner.os }}-solana-verify-v0.4.6
+        key: ${{ runner.os }}-solana-verify-v0.4.15
 
     - name: Install solana-verify
       if: steps.cache-solana-verify.outputs.cache-hit != 'true'
@@ -35,7 +35,7 @@ runs:
       run: |
         set -euo pipefail
         sudo apt-get update -y && sudo apt-get install -y libudev-dev
-        cargo +stable install solana-verify --version 0.4.6 --locked
+        cargo +stable install solana-verify --version 0.4.15 --locked
 
     - name: Verifiable build (.so) + IDL
       shell: bash
@@ -43,11 +43,15 @@ runs:
         PROGRAM: ${{ inputs.program }}
       run: |
         set -euo pipefail
-        # Builds in solanafoundation/solana-verifiable-build:<resolved-solana>.
-        # Solana is already installed via the official agave installer at the same
-        # version solana-verify resolves, so there's no agave-install clash.
-        # Writes target/deploy/<program>.so.
-        solana-verify build --library-name "$PROGRAM"
+        # Pin the build image to match the lock's solana-program (1.16.16). Letting
+        # solana-verify auto-resolve picks the 1.18.26 image, whose cargo-build-sbf
+        # wants deps that differ from Cargo.lock and tries to update the registry
+        # index — which fails under solana-verify's --frozen. The matching 1.16.x
+        # image resolves entirely offline. Writes target/deploy/<program>.so.
+        # NOTE: `solana-verify verify-from-repo` must use this SAME -b image to match.
+        solana-verify build \
+          --base-image solanafoundation/solana-verifiable-build:1.16.16 \
+          --library-name "$PROGRAM"
         # solana-verify only builds the .so; generate the Anchor IDL from source
         # (the parse method Anchor 0.28 itself uses — there's no `anchor idl build`).
         anchor idl parse --file "programs/merkle-distributor/src/lib.rs" \
