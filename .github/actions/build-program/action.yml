@@ -1,16 +1,15 @@
-name: "Build Program (verifiable .so + IDL)"
+name: "Build Program (solana-verify + IDL)"
 description: >
-  Produces a REPRODUCIBLE `merkle_distributor.so` via `anchor build --verifiable`,
-  which builds inside the Anchor 0.28 Docker image (backpackapp/build:v0.28.0,
-  Solana 1.16.x baked in) and writes target/verifiable/<program>.so. Building in
-  the image makes the hash match `solana-verify`/explorer and sidesteps the host
-  avm/agave/solana-version conflicts entirely. The IDL goes to target/idl/.
-  solana-verify is installed only for HASHING (get-executable-hash /
-  get-buffer-hash) — never `solana-verify build`, which would re-trigger the
-  agave Solana resolution.
+  Builds `merkle_distributor.so` with `solana-verify build` — the SAME tool +
+  image (solanafoundation/solana-verifiable-build, Solana 1.18.26 resolved from
+  the solana-program dep) that `solana-verify verify-from-repo` and explorers use.
+  This is what makes the deployed program verifiable: its on-chain hash will match
+  what verify-from-repo recomputes. (`anchor build --verifiable` uses a different
+  image and would NOT verify.) Output .so lands in target/deploy/; the IDL is
+  parsed from source (solana-verify doesn't emit an Anchor IDL).
 inputs:
   program:
-    description: "Program crate name / library name"
+    description: "Program crate / library name"
     required: false
     default: merkle_distributor
 runs:
@@ -30,14 +29,12 @@ runs:
         path: ~/.cargo/bin/solana-verify
         key: ${{ runner.os }}-solana-verify-v0.4.6
 
-    - name: Install solana-verify (hashing only)
+    - name: Install solana-verify
       if: steps.cache-solana-verify.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
         sudo apt-get update -y && sudo apt-get install -y libudev-dev
-        # `+stable` (the program's 1.70 is too old). Used ONLY for get-executable-hash
-        # / get-buffer-hash; we never run `solana-verify build`.
         cargo +stable install solana-verify --version 0.4.6 --locked
 
     - name: Verifiable build (.so) + IDL
@@ -46,24 +43,22 @@ runs:
         PROGRAM: ${{ inputs.program }}
       run: |
         set -euo pipefail
-        # Reproducible build inside the pinned Anchor 0.28 image. Pass the image
-        # explicitly: anchor 0.28 defaults to projectserum/build:v0.28.0, which no
-        # longer exists on Docker Hub (migrated to backpackapp). Writes
-        # target/verifiable/<program>.so.
-        anchor build --verifiable --docker-image backpackapp/build:v0.28.0
-        # The verifiable build also emits the IDL; parse from source as a fallback.
-        if [ ! -f "target/idl/${PROGRAM}.json" ]; then
-          echo "IDL not produced by verifiable build; parsing from source…"
-          anchor idl parse --file "programs/merkle-distributor/src/lib.rs" \
-            --out "target/idl/${PROGRAM}.json"
-        fi
-        ls -l "target/verifiable/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
+        # Builds in solanafoundation/solana-verifiable-build:<resolved-solana>.
+        # Solana is already installed via the official agave installer at the same
+        # version solana-verify resolves, so there's no agave-install clash.
+        # Writes target/deploy/<program>.so.
+        solana-verify build --library-name "$PROGRAM"
+        # solana-verify only builds the .so; generate the Anchor IDL from source
+        # (the parse method Anchor 0.28 itself uses — there's no `anchor idl build`).
+        anchor idl parse --file "programs/merkle-distributor/src/lib.rs" \
+          --out "target/idl/${PROGRAM}.json"
+        ls -l "target/deploy/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
 
     - name: Upload .so artifact
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: ${{ inputs.program }}-so
-        path: target/verifiable/${{ inputs.program }}.so
+        path: target/deploy/${{ inputs.program }}.so
 
     - name: Upload IDL artifact
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

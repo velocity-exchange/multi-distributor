@@ -65,9 +65,9 @@ runs:
         set -euo pipefail
 
         # --- 1. Program buffer (BPF Upgradeable Loader) ---------------------
-        # Reproducible artifact from `anchor build --verifiable` (target/verifiable/).
+        # Reproducible artifact from `solana-verify build` (target/deploy/).
         echo "==> Writing program buffer for $PROGRAM"
-        WB_JSON="$(solana program write-buffer "target/verifiable/${PROGRAM}.so" \
+        WB_JSON="$(solana program write-buffer "target/deploy/${PROGRAM}.so" \
           --url "$RPC_URL" \
           --keypair ./deploy-keypair.json \
           --output json)"
@@ -128,7 +128,7 @@ runs:
         # same method explorers / `verify-from-repo` use, so these are comparable
         # to what's shown on-chain (a raw `sha256sum` is NOT).
         solana config set --url "$RPC_URL" >/dev/null 2>&1 || true
-        SO="target/verifiable/${PROGRAM}.so"
+        SO="target/deploy/${PROGRAM}.so"
         LOCAL_HASH="(unavailable — .so not present)"
         [ -f "$SO" ] && LOCAL_HASH="$(solana-verify get-executable-hash "$SO" 2>/dev/null || echo '(hash failed)')"
         BUFFER_HASH="(no buffer)"
