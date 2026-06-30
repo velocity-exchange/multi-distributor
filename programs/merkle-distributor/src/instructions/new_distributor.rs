@@ -13,9 +13,9 @@ const SECONDS_PER_DAY: i64 = SECONDS_PER_HOUR * HOURS_PER_DAY; // 24 hours * 360
 mod admin {
     use solana_program::declare_id;
     #[cfg(feature = "mainnet-beta")]
-    declare_id!("7RB6dJDDSdJXWJamp2AHD3Dosf6BdRUJnrQLjwVGKVFH");
+    declare_id!("prpHJmuXnqdaz92tBVdwsqmqyhqPLuq5Km35a5QWco3");
     #[cfg(not(feature = "mainnet-beta"))]
-    declare_id!("7RB6dJDDSdJXWJamp2AHD3Dosf6BdRUJnrQLjwVGKVFH");
+    declare_id!("prpHJmuXnqdaz92tBVdwsqmqyhqPLuq5Km35a5QWco3");
 }
 
 /// Accounts for [merkle_distributor::handle_new_distributor].

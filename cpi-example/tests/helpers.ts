@@ -14,7 +14,7 @@ import { IDL as MD_IDL, MerkleDistributor } from '../../target/types/merkle_dist
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-export const MD_PROGRAM_ID = new PublicKey('AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh');
+export const MD_PROGRAM_ID = new PublicKey('distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp');
 export const EXAMPLE_PROGRAM_ID = new PublicKey('3jFBjgMyNBTJwpELbmn6wyYJXDBZgRMYXcQMBywC9keV');
 
 const MD_SO = resolve(HERE, '../../target/deploy/merkle_distributor.so');

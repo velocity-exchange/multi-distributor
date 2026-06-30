@@ -9,7 +9,7 @@ This repo is forked from Merkle distributor tooling and keeps the existing distr
 Current planned DFX distributor program ID:
 
 ```text
-AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh
+distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
 ```
 
 The matching program keypair is intentionally not committed. Keep it outside git and copy it to `target/deploy/merkle_distributor-keypair.json` only when preparing a deploy. If the deployer chooses a different keypair later, run `anchor keys sync` and update downstream `dfx-claim` configuration.
@@ -144,7 +144,7 @@ The Axum server under `api` serves Merkle proof and claim-status data for users.
 ```sh
 cargo build
 target/debug/drift-dfx-distributor-api --merkle-tree-path merkle-tree/trees \
-  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --program-id distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp \
   --mint dfxKL8VLUjLMCnFiJ57ZjrjGDiDMLRX8tHmg8biUV39 \
   --rpc-url https://api.devnet.solana.com  \
   --ws-url wss://api.devnet.solana.com

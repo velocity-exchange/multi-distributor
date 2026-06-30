@@ -7,7 +7,7 @@ This guide adapts the historical Merkle distributor deployment flow for the Drif
 Current DFX distributor program ID:
 
 ```text
-AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh
+distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
 ```
 
 The corresponding program keypair is intentionally not stored in this repo. Keep program keypairs outside git, and copy the keypair into `target/deploy/merkle_distributor-keypair.json` only when preparing a deploy.
@@ -83,7 +83,7 @@ Create distributors for each asset or market-specific asset bucket.
 target/debug/cli \
   --mint [TOKEN_MINT] \
   --priority [MICROLAMPORTS_OPTIONAL] \
-  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --program-id distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp \
   --rpc-url [RPC_URL] \
   --keypair-path [ADMIN_KEYPAIR] \
   new-distributor \
@@ -103,7 +103,7 @@ Funding is a normal SPL token transfer into each distributor vault. The CLI can 
 ```sh
 target/debug/cli \
   --mint [TOKEN_MINT] \
-  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --program-id distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp \
   --rpc-url [RPC_URL] \
   --keypair-path [FUNDER_KEYPAIR] \
   fund-all \
@@ -117,7 +117,7 @@ Anyone can transfer tokens into a vault, but claims remain bounded by the Merkle
 ```sh
 target/debug/cli \
   --mint [TOKEN_MINT] \
-  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --program-id distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp \
   --rpc-url [RPC_URL] \
   --keypair-path [KEYPAIR] \
   verify \
@@ -143,7 +143,7 @@ The API serves distributor and user proof data.
 ```sh
 target/debug/drift-dfx-distributor-api \
   --merkle-tree-path [MERKLE_TREE_DIR] \
-  --program-id AtXLVASdFhmdq2KZxzhVFonmNXL76dTTsEABXySEHgLh \
+  --program-id distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp \
   --mint [TOKEN_MINT] \
   --rpc-url [RPC_URL] \
   --ws-url [WS_URL]
