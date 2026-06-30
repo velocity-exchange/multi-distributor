@@ -46,9 +46,11 @@ runs:
         PROGRAM: ${{ inputs.program }}
       run: |
         set -euo pipefail
-        # Reproducible build inside the pinned Anchor 0.28 image (default image for
-        # the installed anchor version). Writes target/verifiable/<program>.so.
-        anchor build --verifiable
+        # Reproducible build inside the pinned Anchor 0.28 image. Pass the image
+        # explicitly: anchor 0.28 defaults to projectserum/build:v0.28.0, which no
+        # longer exists on Docker Hub (migrated to backpackapp). Writes
+        # target/verifiable/<program>.so.
+        anchor build --verifiable --docker-image backpackapp/build:v0.28.0
         # The verifiable build also emits the IDL; parse from source as a fallback.
         if [ ! -f "target/idl/${PROGRAM}.json" ]; then
           echo "IDL not produced by verifiable build; parsing from source…"
