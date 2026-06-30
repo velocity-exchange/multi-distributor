@@ -1,9 +1,9 @@
 {
-  "clawback_start_ts": 1812682800,
+  "clawback_start_ts": 1814400000,
   "closable": false,
   "csv_dir": "./data/if-csv/mainnet/processed",
   "enable_slot": 465006999,
-  "keypair_path": "~/.config/solana/distributor_deployer.json",
+  "keypair_path": "~/.config/solana/id-prop.json",
   "markets": [
     {
       "index": 19,
@@ -452,6 +452,6 @@
   "program_id": "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp",
   "rpc_url": "https://margo-swuxg2-fast-mainnet.helius-rpc.com",
   "start_airdrop_version": 0,
-  "start_vesting_ts": 1781146800,
+  "start_vesting_ts": 1782849323,
   "trees_dir": "./data/if-trees/mainnet"
 }
