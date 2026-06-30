@@ -126,14 +126,33 @@ runs:
         set -uo pipefail
         # Canonical hashes via solana-verify (strips loader padding, sha256) — the
         # same method explorers / `verify-from-repo` use, so these are comparable
-        # to what's shown on-chain (a raw `sha256sum` is NOT).
+        # to what's shown on-chain (a raw `sha256sum` is NOT). The local .so hash is
+        # authoritative (it's the reproducible build); the on-chain compare is a
+        # best-effort cross-check.
         solana config set --url "$RPC_URL" >/dev/null 2>&1 || true
         SO="target/deploy/${PROGRAM}.so"
-        LOCAL_HASH="(unavailable — .so not present)"
-        [ -f "$SO" ] && LOCAL_HASH="$(solana-verify get-executable-hash "$SO" 2>/dev/null || echo '(hash failed)')"
-        BUFFER_HASH="(no buffer)"
-        [ -n "${BUFFER:-}" ] && BUFFER_HASH="$(solana-verify get-buffer-hash --url "$RPC_URL" "$BUFFER" 2>/dev/null || echo '(hash failed)')"
-        if [ "$BUFFER_HASH" = "$LOCAL_HASH" ]; then VERDICT="✅ buffer matches local verifiable build"; else VERDICT="❌ MISMATCH — do not approve"; fi
+        # Sanitize to a bare 64-hex hash so stray text/whitespace can't break the compare.
+        LOCAL_HASH=""
+        [ -f "$SO" ] && LOCAL_HASH="$(solana-verify get-executable-hash "$SO" 2>/dev/null | grep -oE '[0-9a-f]{64}' | head -1)"
+        # get-buffer-hash can briefly lag right after the write; retry. A failed
+        # FETCH is not a mismatch — only two valid, differing hashes are.
+        BUFFER_HASH=""
+        if [ -n "${BUFFER:-}" ]; then
+          for _ in 1 2 3 4 5 6; do
+            BUFFER_HASH="$(solana-verify get-buffer-hash --url "$RPC_URL" "$BUFFER" 2>/dev/null | grep -oE '[0-9a-f]{64}' | head -1)"
+            [ -n "$BUFFER_HASH" ] && break
+            sleep 5
+          done
+        fi
+        if [ -z "$LOCAL_HASH" ]; then
+          VERDICT="⚠️ local .so missing — could not compute hash"
+        elif [ -z "$BUFFER_HASH" ]; then
+          VERDICT="⚠️ could not fetch on-chain hash (transient) — verify manually: solana-verify get-buffer-hash ${BUFFER}"
+        elif [ "$BUFFER_HASH" = "$LOCAL_HASH" ]; then
+          VERDICT="✅ on-chain buffer matches the local verifiable build"
+        else
+          VERDICT="❌ MISMATCH — do not approve"
+        fi
         {
           echo "### ${PROGRAM} buffers — staged for the Squads proposal"
           echo ""
@@ -141,11 +160,11 @@ runs:
           echo "| --- | --- |"
           echo "| program buffer | \`${BUFFER:-<none>}\` |"
           echo "| idl buffer | \`${IDL_BUFFER:-<none>}\` |"
-          echo "| on-chain buffer hash | \`${BUFFER_HASH}\` |"
-          echo "| local verifiable .so hash | \`${LOCAL_HASH}\` |"
+          echo "| on-chain buffer hash | \`${BUFFER_HASH:-<unavailable>}\` |"
+          echo "| local verifiable .so hash | \`${LOCAL_HASH:-<unavailable>}\` |"
           echo "| verification | ${VERDICT} |"
           echo ""
-          echo "Signers can reproduce: \`solana-verify verify-from-repo\` for this commit."
+          echo "Signers can reproduce: \`solana-verify verify-from-repo --base-image solanafoundation/solana-verifiable-build:1.16.16\` for this commit."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Remove deployer keypair
