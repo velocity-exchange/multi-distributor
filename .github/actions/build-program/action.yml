@@ -1,16 +1,13 @@
-name: "Build Program (.so + IDL)"
+name: "Build Program (verifiable .so + IDL)"
 description: >
-  Produces the deployable `merkle_distributor.so` and the Anchor IDL JSON with a
-  plain `anchor build` (Anchor 0.28 generates the IDL by the parse method — there
-  is no `anchor idl build` until 0.29). The .so lands in target/deploy/ and the
-  IDL in target/idl/; both are uploaded as artifacts and read by later steps in
-  the same job.
-
-  NOTE: this is a standard (non-reproducible) anchor build. We dropped the
-  solana-verify verifiable build because solana-verify, like avm, auto-resolves a
-  Solana version via `agave-install` and conflicts with the pinned 1.16.16. If
-  reproducible builds are needed later, add `anchor build --verifiable` (image
-  backpackapp/build:v0.28.0), which runs entirely in Docker and sidesteps that.
+  Produces a REPRODUCIBLE `merkle_distributor.so` via `anchor build --verifiable`,
+  which builds inside the Anchor 0.28 Docker image (backpackapp/build:v0.28.0,
+  Solana 1.16.x baked in) and writes target/verifiable/<program>.so. Building in
+  the image makes the hash match `solana-verify`/explorer and sidesteps the host
+  avm/agave/solana-version conflicts entirely. The IDL goes to target/idl/.
+  solana-verify is installed only for HASHING (get-executable-hash /
+  get-buffer-hash) — never `solana-verify build`, which would re-trigger the
+  agave Solana resolution.
 inputs:
   program:
     description: "Program crate name / library name"
@@ -19,40 +16,52 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Rust toolchains
+    - name: Install stable Rust (for host tooling)
       shell: bash
-      run: |
-        set -euo pipefail
-        # stable: for host tooling (anchor-cli). 1.70: the program's own toolchain —
-        # rust-toolchain.toml pins it automatically for `anchor build`, but install
-        # it explicitly so it's present + cached.
-        rustup toolchain install stable --profile minimal --no-self-update
-        rustup toolchain install "${RUST_TOOLCHAIN}" --profile minimal --no-self-update
-
-    - name: Cache cargo
-      uses: Swatinem/rust-cache@82a92a6e8fbeee089604da2575dc567ae9ddeaab # v2
-      with:
-        cache-on-failure: "true"
+      run: rustup toolchain install stable --profile minimal --no-self-update
 
     - uses: ./.github/actions/setup-solana/
     - uses: ./.github/actions/setup-anchor/
 
-    - name: Anchor build (.so + IDL, Anchor 0.28)
+    - name: Cache solana-verify
+      id: cache-solana-verify
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.cargo/bin/solana-verify
+        key: ${{ runner.os }}-solana-verify-v0.4.6
+
+    - name: Install solana-verify (hashing only)
+      if: steps.cache-solana-verify.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update -y && sudo apt-get install -y libudev-dev
+        # `+stable` (the program's 1.70 is too old). Used ONLY for get-executable-hash
+        # / get-buffer-hash; we never run `solana-verify build`.
+        cargo +stable install solana-verify --version 0.4.6 --locked
+
+    - name: Verifiable build (.so) + IDL
       shell: bash
       env:
         PROGRAM: ${{ inputs.program }}
       run: |
         set -euo pipefail
-        # cargo-build-sbf (from the pinned Solana) compiles the SBF; the host
-        # rust-toolchain.toml (1.70) handles proc-macros + IDL parsing.
-        anchor build
-        ls -l "target/deploy/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
+        # Reproducible build inside the pinned Anchor 0.28 image (default image for
+        # the installed anchor version). Writes target/verifiable/<program>.so.
+        anchor build --verifiable
+        # The verifiable build also emits the IDL; parse from source as a fallback.
+        if [ ! -f "target/idl/${PROGRAM}.json" ]; then
+          echo "IDL not produced by verifiable build; parsing from source…"
+          anchor idl parse --file "programs/merkle-distributor/src/lib.rs" \
+            --out "target/idl/${PROGRAM}.json"
+        fi
+        ls -l "target/verifiable/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
 
     - name: Upload .so artifact
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: ${{ inputs.program }}-so
-        path: target/deploy/${{ inputs.program }}.so
+        path: target/verifiable/${{ inputs.program }}.so
 
     - name: Upload IDL artifact
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

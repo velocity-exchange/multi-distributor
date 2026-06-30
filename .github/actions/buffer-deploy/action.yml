@@ -65,8 +65,9 @@ runs:
         set -euo pipefail
 
         # --- 1. Program buffer (BPF Upgradeable Loader) ---------------------
+        # Reproducible artifact from `anchor build --verifiable` (target/verifiable/).
         echo "==> Writing program buffer for $PROGRAM"
-        WB_JSON="$(solana program write-buffer "target/deploy/${PROGRAM}.so" \
+        WB_JSON="$(solana program write-buffer "target/verifiable/${PROGRAM}.so" \
           --url "$RPC_URL" \
           --keypair ./deploy-keypair.json \
           --output json)"
@@ -113,18 +114,26 @@ runs:
           --provider.wallet ./deploy-keypair.json
         echo "idl-buffer=$IDL_BUFFER" >> "$GITHUB_OUTPUT"
 
-    - name: Deploy summary
+    - name: Deploy summary + verifiable hashes
       if: always()
       shell: bash
       env:
         PROGRAM: ${{ inputs.program }}
+        RPC_URL: ${{ inputs.rpc-url }}
         BUFFER: ${{ steps.deploy.outputs.buffer }}
         IDL_BUFFER: ${{ steps.deploy.outputs.idl-buffer }}
       run: |
         set -uo pipefail
-        SO="target/deploy/${PROGRAM}.so"
-        SO_SHA="(unavailable — .so not present)"
-        [ -f "$SO" ] && SO_SHA="$(sha256sum "$SO" | awk '{print $1}')"
+        # Canonical hashes via solana-verify (strips loader padding, sha256) — the
+        # same method explorers / `verify-from-repo` use, so these are comparable
+        # to what's shown on-chain (a raw `sha256sum` is NOT).
+        solana config set --url "$RPC_URL" >/dev/null 2>&1 || true
+        SO="target/verifiable/${PROGRAM}.so"
+        LOCAL_HASH="(unavailable — .so not present)"
+        [ -f "$SO" ] && LOCAL_HASH="$(solana-verify get-executable-hash "$SO" 2>/dev/null || echo '(hash failed)')"
+        BUFFER_HASH="(no buffer)"
+        [ -n "${BUFFER:-}" ] && BUFFER_HASH="$(solana-verify get-buffer-hash --url "$RPC_URL" "$BUFFER" 2>/dev/null || echo '(hash failed)')"
+        if [ "$BUFFER_HASH" = "$LOCAL_HASH" ]; then VERDICT="✅ buffer matches local verifiable build"; else VERDICT="❌ MISMATCH — do not approve"; fi
         {
           echo "### ${PROGRAM} buffers — staged for the Squads proposal"
           echo ""
@@ -132,11 +141,11 @@ runs:
           echo "| --- | --- |"
           echo "| program buffer | \`${BUFFER:-<none>}\` |"
           echo "| idl buffer | \`${IDL_BUFFER:-<none>}\` |"
-          echo "| local .so sha256 | \`${SO_SHA}\` |"
+          echo "| on-chain buffer hash | \`${BUFFER_HASH}\` |"
+          echo "| local verifiable .so hash | \`${LOCAL_HASH}\` |"
+          echo "| verification | ${VERDICT} |"
           echo ""
-          echo "Signers: before approving, independently confirm the staged program —"
-          echo "e.g. \`solana-verify get-buffer-hash <program buffer>\` and compare against"
-          echo "\`solana-verify verify-from-repo\` for this commit."
+          echo "Signers can reproduce: \`solana-verify verify-from-repo\` for this commit."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Remove deployer keypair
