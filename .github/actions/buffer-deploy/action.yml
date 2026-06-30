@@ -1,0 +1,149 @@
+name: "Buffer Deploy (program + IDL → Squads)"
+description: >
+  Stages a Squads-governed program + IDL upgrade for an Anchor 0.28 program.
+
+    1. Writes target/deploy/<program>.so to a BPF Upgradeable Loader buffer and
+       transfers the buffer authority to the Squads vault.
+    2. Writes target/idl/<program>.json to an Anchor IDL buffer (`anchor idl
+       write-buffer` — the native, non-program-metadata path; Anchor 0.28 has no
+       `--priority-fee`, so it's omitted) and transfers THAT buffer's authority to
+       the Squads vault with `anchor idl set-authority`.
+    3. Prints the local verifiable .so hash next to the on-chain buffer hash so a
+       multisig signer can confirm the staged program before approving.
+
+  Both buffers are output; the workflow feeds them to
+  solana-foundation/squads-program-action (`buffer` + `idl-buffer`), so the
+  program upgrade AND the IDL set-buffer are applied inside the multisig-approved
+  transaction. The deployer keypair only needs funds + buffer-creation rights —
+  it does NOT need to be the program upgrade authority or the IDL authority (both
+  are the Squads vault).
+inputs:
+  program:
+    description: "Program crate / library name"
+    required: false
+    default: merkle_distributor
+  program-id:
+    description: "On-chain program ID being upgraded"
+    required: true
+  rpc-url:
+    description: "Solana RPC URL"
+    required: true
+  keypair:
+    description: "Deployer keypair JSON (raw [..] array string from a secret)"
+    required: true
+  buffer-authority:
+    description: "Address that should own both buffers after upload (the Squads vault PDA)"
+    required: true
+outputs:
+  buffer:
+    description: "BPF program buffer address (feed to squads-program-action `buffer`)"
+    value: ${{ steps.deploy.outputs.buffer }}
+  idl-buffer:
+    description: "Anchor IDL buffer address (feed to squads-program-action `idl-buffer`)"
+    value: ${{ steps.deploy.outputs.idl-buffer }}
+runs:
+  using: "composite"
+  steps:
+    - name: Write deployer keypair
+      shell: bash
+      env:
+        KEYPAIR: ${{ inputs.keypair }}
+      run: |
+        set -euo pipefail
+        printf '%s' "$KEYPAIR" > ./deploy-keypair.json
+        chmod 600 ./deploy-keypair.json
+
+    - name: Write program + IDL buffers; transfer authorities to vault
+      id: deploy
+      shell: bash
+      env:
+        PROGRAM: ${{ inputs.program }}
+        PROGRAM_ID: ${{ inputs.program-id }}
+        RPC_URL: ${{ inputs.rpc-url }}
+        VAULT: ${{ inputs.buffer-authority }}
+      run: |
+        set -euo pipefail
+
+        # --- 1. Program buffer (BPF Upgradeable Loader) ---------------------
+        echo "==> Writing program buffer for $PROGRAM"
+        WB_JSON="$(solana program write-buffer "target/deploy/${PROGRAM}.so" \
+          --url "$RPC_URL" \
+          --keypair ./deploy-keypair.json \
+          --output json)"
+        BUFFER="$(echo "$WB_JSON" | jq -r '.buffer')"
+        if [ -z "$BUFFER" ] || [ "$BUFFER" = "null" ]; then
+          echo "Failed to parse buffer address from write-buffer output:" >&2
+          echo "$WB_JSON" >&2
+          exit 1
+        fi
+        echo "    program buffer: $BUFFER"
+
+        echo "==> Transferring program buffer authority to Squads vault $VAULT"
+        solana program set-buffer-authority "$BUFFER" \
+          --new-buffer-authority "$VAULT" \
+          --url "$RPC_URL" \
+          --keypair ./deploy-keypair.json
+        echo "buffer=$BUFFER" >> "$GITHUB_OUTPUT"
+
+        # --- 2. Anchor IDL buffer (native, non-program-metadata) ------------
+        # 0.28 idl write-buffer: positional program-id + --filepath. No --priority-fee.
+        echo "==> Creating IDL buffer (anchor 0.28)"
+        IDL_OUT="$(anchor idl write-buffer "$PROGRAM_ID" \
+          --filepath "target/idl/${PROGRAM}.json" \
+          --provider.cluster "$RPC_URL" \
+          --provider.wallet ./deploy-keypair.json)"
+        echo "$IDL_OUT"
+        IDL_BUFFER="$(echo "$IDL_OUT" | awk '/[Ii]dl buffer created/{print $NF}')"
+        if [ -z "$IDL_BUFFER" ]; then
+          echo "Failed to parse IDL buffer address from:" >&2
+          echo "$IDL_OUT" >&2
+          exit 1
+        fi
+        echo "    idl buffer: $IDL_BUFFER"
+
+        # 0.28 idl set-authority: the buffer is a POSITIONAL arg (no --buffer flag);
+        # --program-id and --new-authority are required. This hands the IDL buffer
+        # to the vault so the multisig's set-buffer (idl account is already vault-
+        # owned) can consume it.
+        echo "==> Transferring IDL buffer authority to Squads vault $VAULT"
+        anchor idl set-authority "$IDL_BUFFER" \
+          --program-id "$PROGRAM_ID" \
+          --new-authority "$VAULT" \
+          --provider.cluster "$RPC_URL" \
+          --provider.wallet ./deploy-keypair.json
+        echo "idl-buffer=$IDL_BUFFER" >> "$GITHUB_OUTPUT"
+
+    - name: Deploy summary + verifiable hashes
+      if: always()
+      shell: bash
+      env:
+        PROGRAM: ${{ inputs.program }}
+        RPC_URL: ${{ inputs.rpc-url }}
+        BUFFER: ${{ steps.deploy.outputs.buffer }}
+        IDL_BUFFER: ${{ steps.deploy.outputs.idl-buffer }}
+      run: |
+        set -uo pipefail
+        # solana-verify reads the CLI config even with --url; create it first.
+        solana config set --url "$RPC_URL" >/dev/null 2>&1 || true
+        SO="target/deploy/${PROGRAM}.so"
+        LOCAL_HASH="(unavailable — .so not present)"
+        [ -f "$SO" ] && LOCAL_HASH="$(solana-verify get-executable-hash "$SO" 2>/dev/null || echo '(hash failed)')"
+        BUFFER_HASH="(no buffer)"
+        [ -n "${BUFFER:-}" ] && BUFFER_HASH="$(solana-verify get-buffer-hash --url "$RPC_URL" "$BUFFER" 2>/dev/null || echo '(hash failed)')"
+        if [ "$BUFFER_HASH" = "$LOCAL_HASH" ]; then VERDICT="✅ buffer hash matches local verifiable build"; else VERDICT="❌ MISMATCH — do not approve"; fi
+        {
+          echo "### ${PROGRAM} buffers — verify before approving the Squads proposal"
+          echo ""
+          echo "| field | value |"
+          echo "| --- | --- |"
+          echo "| program buffer | \`${BUFFER:-<none>}\` |"
+          echo "| idl buffer | \`${IDL_BUFFER:-<none>}\` |"
+          echo "| on-chain buffer hash | \`${BUFFER_HASH}\` |"
+          echo "| local verifiable .so hash | \`${LOCAL_HASH}\` |"
+          echo "| verification | ${VERDICT} |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Remove deployer keypair
+      if: always()
+      shell: bash
+      run: rm -f ./deploy-keypair.json

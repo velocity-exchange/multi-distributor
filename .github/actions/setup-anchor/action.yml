@@ -1,0 +1,31 @@
+name: "Setup Anchor CLI (0.28)"
+description: >
+  Install the Anchor CLI pinned by ANCHOR_VERSION (0.28.0) via avm and cache it.
+  avm and its toolchain are built with `+stable`: the repo's rust-toolchain.toml
+  pins Rust 1.70 for the *program* build, but that is too old to compile recent
+  avm — so the installer explicitly selects a newer stable toolchain.
+runs:
+  using: "composite"
+  steps:
+    - name: Cache Anchor CLI (avm)
+      id: cache-anchor
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ~/.avm
+        key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
+
+    - name: Install Anchor CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Ensure a modern stable toolchain exists for building host tooling.
+        rustup toolchain install stable --profile minimal --no-self-update
+        if ! command -v avm >/dev/null 2>&1; then
+          sudo apt-get update -y
+          sudo apt-get install -y libudev-dev pkg-config build-essential
+          # `+stable` overrides the repo's rust-toolchain.toml (1.70) for this build.
+          cargo +stable install --git https://github.com/coral-xyz/anchor avm --locked --force
+        fi
+        avm install "${ANCHOR_VERSION}"
+        avm use "${ANCHOR_VERSION}"
+        anchor --version
