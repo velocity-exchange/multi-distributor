@@ -1,9 +1,12 @@
-name: "Setup Solana (1.16.x)"
+name: "Setup Solana (agave)"
 description: >
-  Install a pinned Solana CLI and a throwaway default identity, caching across
-  runs. Anchor 0.28 pairs with Solana 1.16.x (solana-labs) — NOT the
-  anza-xyz/agave releases (those start at 1.18). Binaries are pulled directly
-  from the GitHub release asset; the env var SOLANA_VERSION selects the version.
+  Install the Solana CLI (SOLANA_VERSION) via the official release.anza.xyz
+  installer, plus a throwaway default identity. We use the official installer
+  (not a raw tarball) so `agave-install` is registered: avm auto-resolves the
+  matching Solana for the Anchor toolchain and manages it through agave-install,
+  so the version installed here must equal what avm resolves (1.18.26 — the max
+  satisfying the program's `^1.16` solana-program dep) to avoid an activation
+  clash. Anchor 0.28 builds fine under Solana 1.18.
 runs:
   using: "composite"
   steps:
@@ -12,24 +15,17 @@ runs:
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: |
-          ~/.local/share/solana-${{ env.SOLANA_VERSION }}/
+          ~/.local/share/solana/
         key: solana-${{ runner.os }}-${{ env.SOLANA_VERSION }}
 
     - name: Install Solana + default identity
       shell: bash
       run: |
         set -euo pipefail
-        DIR="$HOME/.local/share/solana-${SOLANA_VERSION}"
-        BIN="$DIR/bin"
+        BIN="$HOME/.local/share/solana/install/active_release/bin"
         if [ ! -x "$BIN/solana" ]; then
-          # Pull the prebuilt release tarball straight from GitHub. The legacy
-          # release.solana.com install redirect is dead post-Anza, and
-          # release.anza.xyz doesn't carry pre-1.18 builds — the GitHub release
-          # asset is the reliable source for 1.16.x.
-          echo "Downloading Solana v${SOLANA_VERSION} from GitHub releases…"
-          mkdir -p "$DIR"
-          url="https://github.com/solana-labs/solana/releases/download/v${SOLANA_VERSION}/solana-release-x86_64-unknown-linux-gnu.tar.bz2"
-          curl -sSfL "$url" | tar -xj -C "$DIR" --strip-components=1
+          echo "Installing Solana v${SOLANA_VERSION} via release.anza.xyz…"
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
         else
           echo "Using cached Solana at $BIN"
         fi

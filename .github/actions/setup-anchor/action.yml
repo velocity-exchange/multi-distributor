@@ -1,35 +1,34 @@
 name: "Setup Anchor CLI (0.28)"
 description: >
-  Install the Anchor CLI pinned by ANCHOR_VERSION (0.28.0) directly from source
-  and cache the binary. We deliberately do NOT use `avm`: recent avm auto-resolves
-  and installs a Solana version via `agave-install` (it picked 1.18.26 from the
-  solana-program dep), which clashes with the manually-installed 1.16.16 and
-  fails the run. A direct `cargo install` of anchor-cli has no such behavior.
-  Built with `+stable` since the repo's rust-toolchain.toml (1.70) is too old to
-  compile the CLI's host deps.
+  Install the Anchor CLI pinned by ANCHOR_VERSION (0.28.0) via avm and cache it.
+  We use avm rather than `cargo install anchor-cli` because anchor 0.28 cannot be
+  built fresh on a modern runner (its Cargo.lock pins wasm-bindgen 0.2.86 which
+  new Rust rejects, and unlocked it needs the fully-yanked cargo_toml ^0.13); avm
+  builds the otter-sec 0.28 fork against a self-consistent lockfile that compiles.
+  avm auto-installs the matching Solana via agave-install — setup-solana must run
+  first and install that exact version so there's no activation clash. avm itself
+  is built with `+stable` (the repo's 1.70 is too old for it).
 runs:
   using: "composite"
   steps:
-    - name: Cache Anchor CLI
+    - name: Cache Anchor CLI (avm)
       id: cache-anchor
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
-        path: ~/.cargo/bin/anchor
-        key: ${{ runner.os }}-anchor-cli-${{ env.ANCHOR_VERSION }}
+        path: ~/.avm
+        key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
 
     - name: Install Anchor CLI
       shell: bash
       run: |
         set -euo pipefail
         rustup toolchain install stable --profile minimal --no-self-update
-        if ! command -v anchor >/dev/null 2>&1; then
+        if ! command -v avm >/dev/null 2>&1; then
           sudo apt-get update -y
           sudo apt-get install -y libudev-dev pkg-config build-essential
           # `+stable` overrides the repo's rust-toolchain.toml (1.70) for this build.
-          # NOT --locked: anchor 0.28's lockfile pins wasm-bindgen 0.2.86, which
-          # modern Rust rejects ("update to v0.2.88"). Letting Cargo resolve fresh
-          # deps lets it pick a compatible wasm-bindgen (this is what avm does).
-          cargo +stable install --git https://github.com/coral-xyz/anchor \
-            --tag "v${ANCHOR_VERSION}" anchor-cli --force
+          cargo +stable install --git https://github.com/coral-xyz/anchor avm --locked --force
         fi
+        avm install "${ANCHOR_VERSION}"
+        avm use "${ANCHOR_VERSION}"
         anchor --version
