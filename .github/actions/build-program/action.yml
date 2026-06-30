@@ -54,6 +54,8 @@ runs:
           --library-name "$PROGRAM"
         # solana-verify only builds the .so; generate the Anchor IDL from source
         # (the parse method Anchor 0.28 itself uses — there's no `anchor idl build`).
+        # `anchor idl parse --out` uses File::create and won't mkdir the parent.
+        mkdir -p target/idl
         anchor idl parse --file "programs/merkle-distributor/src/lib.rs" \
           --out "target/idl/${PROGRAM}.json"
         ls -l "target/deploy/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
