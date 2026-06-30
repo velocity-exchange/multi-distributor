@@ -1,5 +1,13 @@
 # IF multisig funding
 
+Two tools here, both targeting the **Squads V4 multisig vault** that holds the
+IF tokens:
+
+- **`fund-if-msig.ts`** — fund merkle-distributor vaults (classic SPL Token
+  markets). See below.
+- **`distribute-t22-msig.ts`** — directly pay the **Token-2022** markets'
+  holders (no distributor). See "Token-2022 direct distribution" at the bottom.
+
 `fund-if-msig.ts` funds Insurance Fund (IF) distributor vaults when the tokens
 live in a **Squads V4 multisig vault** instead of a hot keypair. It is the
 multisig counterpart to `../fund-if.sh` / the Rust cli `fund-all`.
@@ -80,3 +88,43 @@ npm run fund -- ... --vault-index 1 --all
 > The vault PDA printed at startup must match the wallet that actually holds the
 > tokens (`4JM5…`, which is vault index **1** for this multisig). If it doesn't,
 > you have the wrong `--vault-index` or `--multisig`.
+
+## Token-2022 direct distribution (`distribute-t22-msig.ts`)
+
+The merkle-distributor program is **classic SPL Token only** (`Program<Token>` /
+`token::TokenAccount`), so the Token-2022 IF mints can't be deployed as
+distributors. Holder counts are tiny (77 total), so this script pays each holder
+their CSV `amount` directly with a Token-2022 `transfer_checked` from the vault,
+wrapped in Squads proposals.
+
+Token-2022 markets: **PYUSD, AUSD, CASH, AI16Z, PUMP** (sACRED-4 has 0 holders).
+
+Two phases — run `--create-atas` first, then propose:
+
+```bash
+cd scripts/deploy-merkle-trees/msig-fund && npm install
+
+# Phase 1 (deployer-signed, NOT multisig): create missing destination ATAs.
+# Idempotent; ~0.002 SOL rent each, paid by --keypair. Most holders already
+# have an ATA, so this is mostly a no-op.
+npm run distribute-t22 -- --config ../if-markets.mainnet.json \
+  --keypair ~/.config/solana/id.json --all-t22 --create-atas
+
+# Phase 2 (multisig): transfer_checked proposals from vault index 1 (4JM5…).
+npm run distribute-t22 -- --config ../if-markets.mainnet.json \
+  --multisig 7qipzLR9j1JcvdxE1XJEFgvoyFmgBpgw5hMdHBMPcJtM --vault-index 1 \
+  --keypair ~/.config/solana/<member>.json --all-t22
+
+# preview either phase:  --dry-run      single market:  --market PYUSD
+```
+
+Notes:
+- Phase 2 **refuses** to propose if any destination ATA is missing — run
+  `--create-atas` first. It also checks the vault holds enough of each mint.
+- Transfers are chunked into proposals of `--batch-size` (default 10), so e.g.
+  PYUSD's 40 holders become 4 proposals. Each is a normal Squads proposal the
+  3-of-5 members approve + execute.
+- `--keypair` for phase 2 must be a multisig **member** (it signs
+  `proposalCreate`); for phase 1 it's just the rent payer.
+- This is a one-shot distribution — re-running phase 2 creates **new** proposals
+  (no on-chain idempotency). Don't approve duplicates.

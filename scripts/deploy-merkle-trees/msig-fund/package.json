@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "fund": "tsx fund-if-msig.ts",
+    "distribute-t22": "tsx distribute-t22-msig.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
