@@ -1,0 +1,72 @@
+name: Release Program to Mainnet
+
+# Mainnet program upgrades are gated by a `program-distributor-<version>` tag.
+# The workflow only PROPOSES the Squads transaction; multisig signers must
+# approve + execute it via the Squads UI. The IDL is published by the
+# buffer-deploy action via Anchor 0.28's native idl commands (option 2).
+
+on:
+  push:
+    tags:
+      - "program-distributor-*"
+
+permissions:
+  contents: read
+
+env:
+  # Anchor 0.28 toolchain pins (see programs/merkle-distributor/Cargo.toml,
+  # rust-toolchain.toml, Cargo.lock → solana-program 1.16.16).
+  RUST_TOOLCHAIN: "1.70.0"
+  SOLANA_VERSION: "1.16.16"
+  ANCHOR_VERSION: "0.28.0"
+  # Must exist on Docker Hub and match SOLANA_VERSION — confirm the tag at
+  # https://hub.docker.com/r/solanafoundation/solana-verifiable-build/tags
+  VERIFIABLE_BUILD_IMAGE: "solanafoundation/solana-verifiable-build:1.16.16"
+  # merkle_distributor program ID (same on devnet + mainnet — see Anchor.toml).
+  DISTRIBUTOR_PROGRAM_ID: distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
+
+jobs:
+  release:
+    name: Build + propose mainnet upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Parse tag
+        id: tag
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="$(echo "$TAG" | sed 's/^program-distributor-//')"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG" ]; then
+            echo "Tag '$TAG' does not match program-distributor-<version>" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build (verifiable .so + IDL)
+        uses: ./.github/actions/build-program/
+        with:
+          program: merkle_distributor
+
+      - name: Buffer deploy (mainnet)
+        id: buffer-deploy
+        uses: ./.github/actions/buffer-deploy/
+        with:
+          program: merkle_distributor
+          program-id: ${{ env.DISTRIBUTOR_PROGRAM_ID }}
+          rpc-url: ${{ secrets.MAINNET_RPC_ENDPOINT }}
+          keypair: ${{ secrets.MAINNET_DEPLOYER_KEYPAIR }}
+          buffer-authority: ${{ secrets.MAINNET_MULTISIG_VAULT }}
+
+      - name: Propose Squads upgrade
+        uses: solana-foundation/squads-program-action@839c079c881344c2da0365ad6a6bb07892e08e2f # v0.4.3
+        with:
+          rpc: ${{ secrets.MAINNET_RPC_ENDPOINT }}
+          program: ${{ env.DISTRIBUTOR_PROGRAM_ID }}
+          multisig: ${{ secrets.MAINNET_MULTISIG }}
+          vault-index: "0"
+          buffer: ${{ steps.buffer-deploy.outputs.buffer }}
+          idl-buffer: ${{ steps.buffer-deploy.outputs.idl-buffer }}
+          keypair: ${{ secrets.MAINNET_DEPLOYER_KEYPAIR }}

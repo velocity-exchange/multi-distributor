@@ -1,0 +1,37 @@
+name: "Setup Solana (1.16.x)"
+description: >
+  Install a pinned Solana CLI and a throwaway default identity, caching across
+  runs. Anchor 0.28 pairs with Solana 1.16.x, which lives on release.solana.com
+  (solana-labs) — NOT the anza-xyz/agave releases (those start at 1.18). The env
+  var SOLANA_VERSION (set at the workflow level) selects the version.
+runs:
+  using: "composite"
+  steps:
+    - name: Cache Solana CLI
+      id: cache-solana
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: |
+          ~/.local/share/solana/
+        key: solana-${{ runner.os }}-${{ env.SOLANA_VERSION }}
+
+    - name: Install Solana + default identity
+      shell: bash
+      run: |
+        set -euo pipefail
+        BIN="$HOME/.local/share/solana/install/active_release/bin"
+        if [ ! -x "$BIN/solana" ]; then
+          echo "Installing Solana v${SOLANA_VERSION} (release.solana.com)…"
+          sh -c "$(curl -sSfL https://release.solana.com/v${SOLANA_VERSION}/install)"
+        else
+          echo "Using cached Solana at $BIN"
+        fi
+        echo "$BIN" >> "$GITHUB_PATH"
+        export PATH="$BIN:$PATH"
+        solana --version
+        # Throwaway CLI identity so commands that read the default keypair don't
+        # fail on a fresh runner. Generated fresh (never a hardcoded array, which
+        # would be printed into the workflow log). Real signing in every flow
+        # uses an explicit --keypair / --provider.wallet (the deployer secret).
+        mkdir -p "$HOME/.config/solana"
+        solana-keygen new --no-bip39-passphrase --silent --force -o "$HOME/.config/solana/id.json"
