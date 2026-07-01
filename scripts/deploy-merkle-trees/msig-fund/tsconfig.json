@@ -9,7 +9,13 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["fund-if-msig.ts", "distribute-t22-msig.ts"]
+  "include": [
+    "fund-if-msig.ts",
+    "distribute-t22-msig.ts",
+    "claim-if-msig.ts"
+  ]
 }

@@ -141,3 +141,37 @@ Notes:
   proposal instructions); for phase 1 it's just the rent payer.
 - One-shot: re-running phase 2 creates a **new** batch/proposal (no on-chain
   idempotency). Don't approve duplicates.
+
+## Claiming for a multisig vault (`claim-if-msig.ts`)
+
+`new_claim` requires the **claimant to sign**, so when a distributor claimant is
+a Squads vault (e.g. the protocol IF vault `4JM5…` = vault index 1), the claim
+must run as a multisig proposal. This reads the claimant's node + merkle proof
+from the local tree(s), builds `new_claim`, and bundles every claim into a
+**single Squads `Batch` under one proposal** (like the fund tool): members
+approve **once**, then execute each inner transaction.
+
+```bash
+# ALL of the protocol vault's claims in one batch (once everything is funded)
+npm run claim -- --config ../if-markets.mainnet.json \
+  --multisig 7qipzLR9j1JcvdxE1XJEFgvoyFmgBpgw5hMdHBMPcJtM --vault-index 1 \
+  --keypair ~/.config/solana/<member>.json --all
+
+# single market, or preview:
+npm run claim -- ... --vault-index 1 --market USD1
+npm run claim -- ... --vault-index 1 --all --dry-run
+```
+
+- The **claimant is the vault** derived from `--multisig`/`--vault-index`
+  (`--vault-index 1` = `4JM5…`). `--all` claims every deployed market it's a
+  claimant in; one claim per inner transaction (merkle proofs are large).
+- Skips: markets in `exclude_markets` (Token-2022 — no distributor; those go
+  through `distribute-t22-msig`), markets the vault isn't in, and markets already
+  claimed (`claimStatus` exists). So re-running `--all` after a partial execute
+  only proposes what's left.
+- **Fund first.** A claim moves tokens out of the distributor vault, so each
+  market must already be funded (via `fund`, executed) — else it reverts.
+- **SOL:** the claimant vault pays `claimStatus` rent (~0.0017 SOL) per claim
+  plus any missing-ATA rent. `--all` across ~45 markets ≈ **0.08 SOL** — the
+  script prints need-vs-have and warns if the vault is short. Top up the vault
+  before executing.

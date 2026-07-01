@@ -399,6 +399,28 @@ async function main() {
 			skipped++;
 			continue;
 		}
+
+		// Source-balance guard: the transfer authority is the vault, so the
+		// vault's ATA for this mint must actually hold the amount we're about to
+		// send. If it doesn't (e.g. the USDC/SOL deposits haven't arrived yet),
+		// skip — don't propose a transfer that would fail at execution. A later
+		// re-run picks the market up once the funds land.
+		const need = transfers.reduce((a, t) => a + t.amount, 0n);
+		let srcBal = 0n;
+		try {
+			srcBal = BigInt((await connection.getTokenAccountBalance(vaultAta)).value.amount);
+		} catch {
+			srcBal = 0n; // source ATA doesn't exist yet
+		}
+		if (srcBal < need) {
+			console.log(
+				`    skip: source vault holds ${fmtAmount(srcBal, market.decimals)} < needed ` +
+					`${fmtAmount(need, market.decimals)} — funds not arrived\n`
+			);
+			skipped++;
+			continue;
+		}
+
 		for (const t of transfers) {
 			allIxs.push(
 				createTransferInstruction(

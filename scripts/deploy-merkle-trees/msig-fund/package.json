@@ -7,7 +7,8 @@
   "scripts": {
     "fund": "tsx fund-if-msig.ts",
     "distribute-t22": "tsx distribute-t22-msig.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "claim": "tsx claim-if-msig.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
