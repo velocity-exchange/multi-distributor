@@ -12,10 +12,10 @@ IF tokens:
 live in a **Squads V4 multisig vault** instead of a hot keypair. It is the
 multisig counterpart to `../fund-if.sh` / the Rust cli `fund-all`.
 
-It does **not** move tokens itself — it builds the SPL transfers and submits a
-Squads `vaultTransactionCreate` + `proposalCreate`. Multisig members still have
-to approve and execute the proposal (via the Squads UI or CLI) before any tokens
-move. The proposer keypair only pays rent and is recorded as the creator.
+It does **not** move tokens itself — it bundles all the funding transfers into a
+**single Squads `Batch` under one proposal**. Multisig members approve that one
+proposal (via the Squads UI or CLI), then execute each inner transaction, before
+any tokens move. The proposer keypair only pays rent and is recorded as creator.
 
 ## What it does
 
@@ -29,8 +29,13 @@ For the selected market(s), for each merkle tree under
    vault balance — skips if already funded or clawed back;
 3. emits `transfer(vaultAta → distributorVaultAta, authority = vault PDA)`.
 
-One proposal is created per market. `--all` creates one proposal per
-still-unfunded market with sequential transaction indexes.
+All those transfers go into **one batch / one proposal**:
+`batchCreate` + `proposalCreate(draft)` → one `batchAddTransaction` per inner
+chunk of `--batch-size` transfers (default 8; ≤10 fits one ~1232-byte execute
+tx, since each fund transfer has a distinct source+dest) → `proposalActivate`.
+So `--all` across ~45 markets is **one approval, ~6 inner txs to execute**, not
+45 separate proposals. Markets in the config's `exclude_markets` (Token-2022)
+and any with no on-disk trees (0-claim / not deployed) are skipped.
 
 ## Prerequisites
 

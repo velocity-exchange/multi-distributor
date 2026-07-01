@@ -18,9 +18,12 @@
  * so re-proposing after a partial fund or after claims have started only tops up
  * the remaining deficit, and a clawed-back distributor is skipped.
  *
- * One proposal is created per market (a market split across multiple trees emits
- * one transfer per tree inside that single proposal). `--all` creates one
- * proposal per unfunded market, with sequential transaction indexes.
+ * All funding transfers (across one or every market) go into a SINGLE Squads
+ * `Batch` under one proposal: batchCreate + proposalCreate(draft) -> one
+ * batchAddTransaction per inner chunk (≤ --batch-size transfers, so each fits
+ * the ~1232-byte execute tx) -> proposalActivate. Members approve ONCE, then
+ * execute each inner transaction. So `--all` across ~45 markets is one approval,
+ * not ~45.
  *
  * Usage (run from this directory after `npm install`):
  *   npm run fund -- --config ../if-markets.mainnet.json \
@@ -79,6 +82,7 @@ type IfConfig = {
 	program_id: string;
 	csv_dir?: string;
 	trees_dir?: string;
+	exclude_markets?: number[];
 	markets: Market[];
 };
 type TreeFile = {
@@ -121,6 +125,12 @@ function fmtAmount(raw: bigint, decimals?: number): string {
 	const whole = s.slice(0, s.length - decimals);
 	const frac = s.slice(s.length - decimals).replace(/0+$/, '');
 	return frac ? `${whole}.${frac} (${raw} base)` : `${whole} (${raw} base)`;
+}
+
+function chunk<T>(arr: T[], n: number): T[][] {
+	const out: T[][] = [];
+	for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+	return out;
 }
 
 // One funding transfer derived from a single tree.
@@ -192,6 +202,21 @@ async function planMarketTransfers(
 			continue;
 		}
 
+		// Once claiming has started, never re-fund from here. Claiming is live
+		// (enable_slot + start_ts have passed), so a vault funded now can be
+		// drained by claimants before a later `--all` run. The deficit math
+		// below would top the vault back up to cover the remaining unclaimed
+		// entitlement — correct in the abstract, but we don't want an `--all`
+		// run silently re-proposing transfers into an already-live distributor.
+		// A genuine top-up should be done deliberately, not as a side effect.
+		if (claimed > 0n) {
+			console.log(
+				`    [${label} v${tree.airdrop_version}] skip: claiming has started ` +
+					`(${fmtAmount(claimed, market.decimals)} claimed) — not re-funding`
+			);
+			continue;
+		}
+
 		const maxTotalClaim = BigInt(tree.max_total_claim);
 		const target = maxTotalClaim - claimed;
 
@@ -242,10 +267,11 @@ async function main() {
 		)
 		.option('--market <symbol>', 'fund a single market by symbol (e.g. mSOL)')
 		.option('--index <n>', 'fund a single market by index (e.g. 2)')
-		.option('--all', 'fund every still-unfunded market (one proposal each)')
+		.option('--all', 'fund every still-unfunded market (one batch / one proposal)')
 		.option('-u, --url <rpc>', 'RPC URL override (default: config.rpc_url)')
 		.option('--trees-dir <dir>', 'trees dir override (default: config.trees_dir)')
 		.option('--vault-index <n>', 'Squads vault index', '0')
+		.option('--batch-size <n>', 'transfers per inner batch-transaction (≤10 fits one execute tx)', '8')
 		.option('--dry-run', 'plan + print proposals without sending', false)
 		.parse(process.argv);
 
@@ -331,105 +357,110 @@ async function main() {
 	console.log(`    dry-run      ${!!opts.dryRun}`);
 	console.log();
 
-	// Read the multisig's current transaction index once; increment locally per
-	// proposal so a multi-market run gets sequential indexes. Skipped on
-	// --dry-run so a preview never needs the multisig account to be reachable.
-	let nextTxIndex = 0n;
-	if (!opts.dryRun) {
-		const msInfo = await multisig.accounts.Multisig.fromAccountAddress(
-			connection,
-			multisigPda
-		);
-		nextTxIndex = BigInt(msInfo.transactionIndex.toString()) + 1n;
-	}
-
-	const proposed: { market: string; txIndex: bigint; sig?: string }[] = [];
+	// Gather all funding transfers across the selected markets into ONE flat
+	// list (read-only planning). Each market may emit 0+ transfers (one per tree
+	// still under-funded); a market with nothing to fund is skipped.
+	const allIxs: TransactionInstruction[] = [];
+	let grandTotalTransfers = 0;
 	let skipped = 0;
+
+	// Markets deferred via config exclude_markets (e.g. Token-2022 mints the
+	// distributor program can't take) have no distributor — skip them, matching
+	// deploy-if.sh. The original config carries exclude_markets; the merged
+	// config keeps the same per-mint indices.
+	const excluded = new Set<number>((config.exclude_markets ?? []) as number[]);
 
 	for (const market of markets) {
 		const label = `${market.index}-${market.symbol}`;
+		if (excluded.has(market.index)) {
+			console.log(`==> [${label}] skipped (excluded in config)\n`);
+			skipped++;
+			continue;
+		}
 		const treeDir = path.join(treesDir, label);
+		// 0-claim markets were never deployed (no trees) — skip rather than error.
+		const treeFiles = fs.existsSync(treeDir)
+			? fs.readdirSync(treeDir).filter((f) => f.startsWith('tree_') && f.endsWith('.json'))
+			: [];
+		if (treeFiles.length === 0) {
+			console.log(`==> [${label}] skipped (no trees on-disk — not deployed)\n`);
+			skipped++;
+			continue;
+		}
 		const mint = new PublicKey(market.mint);
 		const vaultAta = getAssociatedTokenAddressSync(mint, vaultPda, true);
 
 		console.log(`==> ${label}  mint=${market.mint}`);
 		console.log(`    source vault ATA: ${vaultAta.toBase58()}`);
 
-		const transfers = await planMarketTransfers(
-			connection,
-			dist,
-			programId,
-			market,
-			treeDir
-		);
+		const transfers = await planMarketTransfers(connection, dist, programId, market, treeDir);
 		if (transfers.length === 0) {
 			console.log(`    nothing to fund.\n`);
 			skipped++;
 			continue;
 		}
-
-		const ixs: TransactionInstruction[] = transfers.map((t) =>
-			createTransferInstruction(
-				vaultAta,
-				t.destVault,
-				vaultPda, // authority — the vault PDA signs at execution time
-				t.amount,
-				[],
-				TOKEN_PROGRAM_ID
-			)
-		);
-
-		const total = transfers.reduce((a, t) => a + t.amount, 0n);
-		const memo = `IF fund ${label} ${fmtAmount(total, market.decimals)}`;
-
-		if (opts.dryRun) {
-			console.log(
-				`    [dry-run] would propose ${ixs.length} transfer(s), total ` +
-					`${fmtAmount(total, market.decimals)} (txIndex assigned at send)\n`
+		for (const t of transfers) {
+			allIxs.push(
+				createTransferInstruction(
+					vaultAta,
+					t.destVault,
+					vaultPda, // authority — the vault PDA signs at execution time
+					t.amount,
+					[],
+					TOKEN_PROGRAM_ID
+				)
 			);
-			proposed.push({ market: label, txIndex: -1n });
-			continue;
 		}
-
-		const txIndex = nextTxIndex++;
-		const { blockhash } = await connection.getLatestBlockhash();
-		const message = new TransactionMessage({
-			payerKey: vaultPda,
-			recentBlockhash: blockhash,
-			instructions: ixs,
-		});
-		const createIx = multisig.instructions.vaultTransactionCreate({
-			multisigPda,
-			transactionIndex: txIndex,
-			creator: wallet.publicKey,
-			vaultIndex,
-			ephemeralSigners: 0,
-			transactionMessage: message,
-			memo,
-		});
-		const proposeIx = multisig.instructions.proposalCreate({
-			multisigPda,
-			transactionIndex: txIndex,
-			creator: wallet.publicKey,
-		});
-
-		const sig = await provider.sendAndConfirm(
-			new Transaction().add(createIx, proposeIx)
-		);
-		console.log(
-			`    ✓ proposed txIndex=${txIndex}  sig=${sig}\n` +
-				`      members must approve + execute via the Squads UI/CLI.\n`
-		);
-		proposed.push({ market: label, txIndex, sig });
+		const total = transfers.reduce((a, t) => a + t.amount, 0n);
+		console.log(`    -> ${transfers.length} transfer(s), ${fmtAmount(total, market.decimals)}\n`);
+		grandTotalTransfers += transfers.length;
 	}
 
-	console.log(`==> Summary`);
-	console.log(`    proposed (${proposed.length}): ` +
-		(proposed
-			.map((p) => (p.txIndex >= 0n ? `${p.market}#${p.txIndex}` : p.market))
-			.join(', ') || '<none>'));
-	console.log(`    skipped/already-funded markets: ${skipped}`);
-	if (opts.dryRun) console.log(`    (dry-run — nothing was sent)`);
+	if (allIxs.length === 0) {
+		console.log(`==> Nothing to fund (${skipped} market(s) already funded / empty).`);
+		return;
+	}
+
+	// All transfers go into ONE Squads Batch under a single proposal. Chunk into
+	// inner transactions of ≤ batch-size so each fits a ~1232-byte execute tx.
+	const chunks = chunk(allIxs, Number(opts.batchSize));
+	console.log(`==> ONE batch: ${grandTotalTransfers} transfer(s) in ${chunks.length} inner transaction(s) (${skipped} market(s) skipped)`);
+
+	if (opts.dryRun) {
+		console.log(`    [dry-run] would batchCreate + proposalCreate(draft) + ${chunks.length}x batchAddTransaction + proposalActivate`);
+		console.log(`    (dry-run — nothing was sent)`);
+		return;
+	}
+
+	const msInfo = await multisig.accounts.Multisig.fromAccountAddress(connection, multisigPda);
+	const batchIndex = BigInt(msInfo.transactionIndex.toString()) + 1n;
+
+	// 1. Create the batch + its proposal (draft, so transactions can be added).
+	const createIx = multisig.instructions.batchCreate({ multisigPda, creator: wallet.publicKey, batchIndex, vaultIndex, memo: `IF fund (${grandTotalTransfers} transfers)` });
+	const proposeIx = multisig.instructions.proposalCreate({ multisigPda, transactionIndex: batchIndex, creator: wallet.publicKey, isDraft: true });
+	let sig = await provider.sendAndConfirm(new Transaction().add(createIx, proposeIx));
+	console.log(`==> batchCreate + proposalCreate(draft) batchIndex=${batchIndex} sig=${sig}`);
+
+	// 2. Add each inner transaction (1-based index within the batch).
+	for (let i = 0; i < chunks.length; i++) {
+		const { blockhash } = await connection.getLatestBlockhash();
+		const message = new TransactionMessage({ payerKey: vaultPda, recentBlockhash: blockhash, instructions: chunks[i] });
+		const addIx = multisig.instructions.batchAddTransaction({
+			vaultIndex, multisigPda, member: wallet.publicKey, batchIndex,
+			transactionIndex: i + 1, ephemeralSigners: 0, transactionMessage: message,
+		});
+		sig = await provider.sendAndConfirm(new Transaction().add(addIx));
+		console.log(`    + inner ${i + 1}/${chunks.length} (${chunks[i].length} transfers) sig=${sig}`);
+	}
+
+	// 3. Activate the proposal so members can vote.
+	sig = await provider.sendAndConfirm(
+		new Transaction().add(multisig.instructions.proposalActivate({ multisigPda, transactionIndex: batchIndex, member: wallet.publicKey }))
+	);
+	console.log(`==> proposalActivate sig=${sig}`);
+	console.log();
+	console.log(`==> Done. ONE proposal (batchIndex ${batchIndex}) with ${chunks.length} inner transactions, ${grandTotalTransfers} transfers total.`);
+	console.log(`    Members approve the single proposal, then execute each inner transaction (batchExecuteTransaction) via the Squads UI/CLI.`);
 }
 
 main().catch((e) => {
