@@ -63,6 +63,11 @@ load_shared_config() {
   CLOSABLE="$(cfg "$config" '.closable')"
   START_AIRDROP_VERSION="$(cfg "$config" '.start_airdrop_version')"
 
+  # Optional list of market indices to skip entirely (e.g. Token-2022 mints this
+  # classic-SPL-Token program can't handle, or markets being deferred). A
+  # space-separated string of indices; empty when the key is absent.
+  EXCLUDE_MARKETS="$(jq -r '(.exclude_markets // []) | map(tostring) | join(" ")' "$config")"
+
   # The cli (and solana's read_keypair_file) does not expand ~; do it here so a
   # leading-tilde keypair_path works.
   KEYPAIR_PATH="${KEYPAIR_PATH/#\~/$HOME}"
@@ -99,6 +104,29 @@ load_shared_config() {
     echo "Note: ignoring config end_vesting_ts=$config_end_vesting_ts; enforcing" \
          "end_vesting_ts=$END_VESTING_TS (start_vesting_ts + 1, no vesting)." >&2
   fi
+}
+
+# ---------------------------------------------------------------------------
+# True (exit 0) if the given market index is in the config's exclude_markets
+# list. Honored by every entry script's market loop so a skipped market is
+# skipped uniformly across deploy / fund / set-authorities.
+# ---------------------------------------------------------------------------
+market_excluded() {
+  local index="$1" x
+  for x in ${EXCLUDE_MARKETS:-}; do
+    [[ "$x" == "$index" ]] && return 0
+  done
+  return 1
+}
+
+# ---------------------------------------------------------------------------
+# True (exit 0) if the CSV has at least one data row beyond the header. Used to
+# skip 0-claim markets, which would otherwise trip create-merkle-tree's 0-node
+# subtraction overflow and create a useless empty distributor.
+# ---------------------------------------------------------------------------
+csv_has_claims() {
+  local csv="$1"
+  [[ "$(awk 'NR>1{c++} END{print c+0}' "$csv")" -gt 0 ]]
 }
 
 # ---------------------------------------------------------------------------
