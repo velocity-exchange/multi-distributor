@@ -43,6 +43,7 @@ pub fn handle_set_root(
     ctx: Context<SetRoot>,
     new_root: [u8; 32],
     expected_old_root: [u8; 32],
+    expected_num_nodes_claimed: u64,
     new_max_total_claim: u64,
 ) -> Result<()> {
     let distributor = &ctx.accounts.distributor;
@@ -50,6 +51,7 @@ pub fn handle_set_root(
         distributor,
         ctx.accounts.token_vault.amount,
         expected_old_root,
+        expected_num_nodes_claimed,
         new_max_total_claim,
     )?;
 
@@ -94,14 +96,18 @@ pub fn handle_set_root(
 ///     1. The distributor is for a DFX mint
 ///     2. The distributor has not been clawed back
 ///     3. Claims are paused (`enable_slot == u64::MAX`)
-///     4. The current root is the one the caller built against
+///     4. The root and claim count are the ones the caller built against, so no claim
+///        landed between building the new tree and pausing
 ///     5. The new max only decreases, and still covers what was already claimed or forgone
-///     6. After the burn the vault still covers every unclaimed leaf of the new root
+///     6. The vault covers `max_total_claim - claimed`, so burning the decrease leaves
+///        `new_max_total_claim - claimed`
+/// The program can't see leaves: the caller must not cut a claimant that already claimed.
 #[allow(clippy::result_large_err)]
 fn validate_set_root(
     distributor: &MerkleDistributor,
     vault_amount: u64,
     expected_old_root: [u8; 32],
+    expected_num_nodes_claimed: u64,
     new_max_total_claim: u64,
 ) -> Result<u64> {
     require!(
@@ -118,6 +124,10 @@ fn validate_set_root(
         ErrorCode::RootMismatch
     );
     require!(
+        distributor.num_nodes_claimed == expected_num_nodes_claimed,
+        ErrorCode::ClaimCountMismatch
+    );
+    require!(
         new_max_total_claim <= distributor.max_total_claim,
         ErrorCode::MaxTotalClaimIncrease
     );
@@ -127,17 +137,12 @@ fn validate_set_root(
         .ok_or(ErrorCode::ArithmeticError)?;
     require!(new_max_total_claim >= settled, ErrorCode::ExceededMaxClaim);
 
-    let burn_amount = distributor.max_total_claim - new_max_total_claim;
-    let still_owed = new_max_total_claim - distributor.total_amount_claimed;
-    let vault_after = vault_amount
-        .checked_sub(burn_amount)
-        .ok_or(ErrorCode::InsufficientUnlockedTokens)?;
     require!(
-        vault_after >= still_owed,
+        vault_amount >= distributor.max_total_claim - distributor.total_amount_claimed,
         ErrorCode::InsufficientUnlockedTokens
     );
 
-    Ok(burn_amount)
+    Ok(distributor.max_total_claim - new_max_total_claim)
 }
 
 #[cfg(test)]
@@ -167,17 +172,20 @@ mod tests {
     fn burns_exactly_the_decrease() {
         let d = paused(100, 0);
         assert_eq!(
-            validate_set_root(&d, MAX - 100, OLD_ROOT, 600_000).unwrap(),
+            validate_set_root(&d, MAX - 100, OLD_ROOT, d.num_nodes_claimed, 600_000).unwrap(),
             400_000
         );
-        assert_eq!(validate_set_root(&d, MAX - 100, OLD_ROOT, MAX).unwrap(), 0);
+        assert_eq!(
+            validate_set_root(&d, MAX - 100, OLD_ROOT, d.num_nodes_claimed, MAX).unwrap(),
+            0
+        );
     }
 
     #[test]
     fn a_vault_donation_does_not_change_the_burn() {
         let d = paused(100, 0);
         assert_eq!(
-            validate_set_root(&d, MAX - 100 + 1, OLD_ROOT, 600_000).unwrap(),
+            validate_set_root(&d, MAX - 100 + 1, OLD_ROOT, d.num_nodes_claimed, 600_000).unwrap(),
             400_000
         );
     }
@@ -188,7 +196,7 @@ mod tests {
             mint: DFX_MINTS[1],
             ..paused(0, 0)
         };
-        assert!(validate_set_root(&d, MAX, OLD_ROOT, 1).is_ok());
+        assert!(validate_set_root(&d, MAX, OLD_ROOT, d.num_nodes_claimed, 1).is_ok());
     }
 
     #[test]
@@ -198,7 +206,7 @@ mod tests {
             ..paused(0, 0)
         };
         assert_err(
-            validate_set_root(&d, MAX, OLD_ROOT, 1),
+            validate_set_root(&d, MAX, OLD_ROOT, d.num_nodes_claimed, 1),
             ErrorCode::MintNotReRootable,
         );
     }
@@ -210,7 +218,7 @@ mod tests {
             ..paused(0, 0)
         };
         assert_err(
-            validate_set_root(&d, MAX, OLD_ROOT, 1),
+            validate_set_root(&d, MAX, OLD_ROOT, d.num_nodes_claimed, 1),
             ErrorCode::ClawbackAlreadyClaimed,
         );
     }
@@ -222,7 +230,7 @@ mod tests {
             ..paused(0, 0)
         };
         assert_err(
-            validate_set_root(&d, MAX, OLD_ROOT, 1),
+            validate_set_root(&d, MAX, OLD_ROOT, d.num_nodes_claimed, 1),
             ErrorCode::DistributorNotPaused,
         );
     }
@@ -231,8 +239,20 @@ mod tests {
     fn rejects_stale_root() {
         let d = paused(0, 0);
         assert_err(
-            validate_set_root(&d, MAX, [8; 32], 1),
+            validate_set_root(&d, MAX, [8; 32], d.num_nodes_claimed, 1),
             ErrorCode::RootMismatch,
+        );
+    }
+
+    #[test]
+    fn rejects_a_claim_after_the_tree_was_built() {
+        let d = MerkleDistributor {
+            num_nodes_claimed: 3,
+            ..paused(0, 0)
+        };
+        assert_err(
+            validate_set_root(&d, MAX, OLD_ROOT, 2, 1),
+            ErrorCode::ClaimCountMismatch,
         );
     }
 
@@ -240,7 +260,7 @@ mod tests {
     fn rejects_increase() {
         let d = paused(0, 0);
         assert_err(
-            validate_set_root(&d, MAX, OLD_ROOT, MAX + 1),
+            validate_set_root(&d, MAX, OLD_ROOT, d.num_nodes_claimed, MAX + 1),
             ErrorCode::MaxTotalClaimIncrease,
         );
     }
@@ -249,21 +269,21 @@ mod tests {
     fn rejects_max_below_claimed_plus_forgone() {
         let d = paused(500, 100);
         assert_err(
-            validate_set_root(&d, MAX - 500, OLD_ROOT, 599),
+            validate_set_root(&d, MAX - 500, OLD_ROOT, d.num_nodes_claimed, 599),
             ErrorCode::ExceededMaxClaim,
         );
-        assert!(validate_set_root(&d, MAX - 500, OLD_ROOT, 600).is_ok());
+        assert!(validate_set_root(&d, MAX - 500, OLD_ROOT, d.num_nodes_claimed, 600).is_ok());
     }
 
     #[test]
     fn rejects_underfunded_vault() {
         let d = paused(100, 0);
         assert_err(
-            validate_set_root(&d, MAX - 101, OLD_ROOT, 600_000),
+            validate_set_root(&d, MAX - 101, OLD_ROOT, d.num_nodes_claimed, 600_000),
             ErrorCode::InsufficientUnlockedTokens,
         );
         assert_err(
-            validate_set_root(&d, 10, OLD_ROOT, 600_000),
+            validate_set_root(&d, 10, OLD_ROOT, d.num_nodes_claimed, 600_000),
             ErrorCode::InsufficientUnlockedTokens,
         );
     }

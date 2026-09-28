@@ -136,6 +136,9 @@ describe("set_root", () => {
 
   const tokenAmount = (addr: PublicKey) =>
     AccountLayout.decode(Buffer.from(svm.getAccount(addr)!.data)).amount;
+  // MerkleDistributor: disc 8, bump 1, version 8, then root at 17 and max_total_claim at 113.
+  const rootOf = (d: PublicKey) => Buffer.from(svm.getAccount(d)!.data).subarray(17, 49);
+  const maxOf = (d: PublicKey) => Buffer.from(svm.getAccount(d)!.data).readBigUInt64LE(113);
   const supply = () => MintLayout.decode(Buffer.from(svm.getAccount(DFX_MINT)!.data)).supply;
 
   const setTokenAccount = (addr: PublicKey, owner: PublicKey, amount: bigint) => {
@@ -172,6 +175,7 @@ describe("set_root", () => {
   const setRootIx = (
     newRoot: Uint8Array,
     expectedOldRoot: Uint8Array,
+    expectedClaims: bigint,
     newMax: bigint,
     signer = admin.publicKey,
     target = { distributor, vault, mint: DFX_MINT },
@@ -185,7 +189,7 @@ describe("set_root", () => {
         { pubkey: signer, isSigner: true, isWritable: false },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
-      data: Buffer.concat([disc("set_root"), newRoot, expectedOldRoot, u64(newMax)]),
+      data: Buffer.concat([disc("set_root"), newRoot, expectedOldRoot, u64(expectedClaims), u64(newMax)]),
     });
   const claimIx = (user: Keypair, amount: bigint, proof: Uint8Array[]) => {
     const [claimStatus] = PublicKey.findProgramAddressSync(
@@ -273,15 +277,16 @@ describe("set_root", () => {
     const newTree = buildTree(newLeaves);
     const newMax = MAX - cut;
 
-    expectErr(send([setRootIx(newTree.root, oldTree.root, newMax)], [admin]), "DistributorNotPaused");
+    expectErr(send([setRootIx(newTree.root, oldTree.root, 1n, newMax)], [admin]), "DistributorNotPaused");
     expectOk(send([setEnableSlotIx(U64_MAX)], [admin]));
     expectErr(send([claimIx(users[1], OLD[1], oldTree.proofs[1])], [users[1]]), "ClaimingIsNotStarted");
 
     const outsider = Keypair.generate();
     svm.airdrop(outsider.publicKey, 1_000_000_000n);
-    expectErr(send([setRootIx(newTree.root, oldTree.root, newMax, outsider.publicKey)], [outsider]), "Unauthorized");
-    expectErr(send([setRootIx(newTree.root, newTree.root, newMax)], [admin]), "RootMismatch");
-    expectErr(send([setRootIx(newTree.root, oldTree.root, MAX + 1n)], [admin]), "MaxTotalClaimIncrease");
+    expectErr(send([setRootIx(newTree.root, oldTree.root, 1n, newMax, outsider.publicKey)], [outsider]), "Unauthorized");
+    expectErr(send([setRootIx(newTree.root, newTree.root, 1n, newMax)], [admin]), "RootMismatch");
+    expectErr(send([setRootIx(newTree.root, oldTree.root, 0n, newMax)], [admin]), "ClaimCountMismatch");
+    expectErr(send([setRootIx(newTree.root, oldTree.root, 1n, MAX + 1n)], [admin]), "MaxTotalClaimIncrease");
 
     // A donation into the vault must not block or change the burn.
     const donation = Buffer.alloc(9);
@@ -306,8 +311,12 @@ describe("set_root", () => {
 
     const supplyBefore = supply();
     const vaultBefore = tokenAmount(vault);
-    expectOk(send([setRootIx(newTree.root, oldTree.root, newMax)], [admin]));
+    const res = send([setRootIx(newTree.root, oldTree.root, 1n, newMax)], [admin]);
+    expectOk(res);
     expect(supply()).toBe(supplyBefore - cut);
+    expect(Buffer.compare(rootOf(distributor), Buffer.from(newTree.root))).toBe(0);
+    expect(maxOf(distributor)).toBe(newMax);
+    expect(logsOf(res)).toContain("Program data: "); // SetRootEvent
     expect(tokenAmount(vault)).toBe(vaultBefore - cut);
 
     expectOk(send([setEnableSlotIx(0n)], [admin]));
@@ -320,6 +329,15 @@ describe("set_root", () => {
     expect(tokenAmount(ata(users[1].publicKey))).toBe(OLD[1] - cut);
     expect(tokenAmount(ata(users[2].publicKey))).toBe(OLD[2]);
     expect(tokenAmount(vault)).toBe(7n); // only the donation is left
+  });
+
+  test("rejects a proposal built before a claim landed", () => {
+    const newTree = buildTree(oldLeaves.map((l, i) => (i === 1 ? { ...l, amount: 1n } : l)));
+    // Built with 0 claims; user 1 then claims its old leaf before the pause.
+    expectOk(send([claimIx(users[1], OLD[1], oldTree.proofs[1])], [users[1]]));
+    expectOk(send([setEnableSlotIx(U64_MAX)], [admin]));
+    expectErr(send([setRootIx(newTree.root, oldTree.root, 0n, MAX - OLD[1] + 1n)], [admin]), "ClaimCountMismatch");
+    expect(maxOf(distributor)).toBe(MAX);
   });
 
   test("rejects a non-DFX distributor", () => {
@@ -346,7 +364,7 @@ describe("set_root", () => {
     data.writeBigUInt64LE(U64_MAX, 8 + 1 + 8 + 32 * 3 + 8 * 5 + 8 * 3 + 32 * 2 + 1); // enable_slot: paused
     svm.setAccount(other, { lamports: 10_000_000, data, owner: PROGRAM_ID, executable: false });
 
-    const res = send([setRootIx(oldTree.root, oldTree.root, MAX - 1n, admin.publicKey, { distributor: other, vault: otherVault, mint })], [admin]);
+    const res = send([setRootIx(oldTree.root, oldTree.root, 0n, MAX - 1n, admin.publicKey, { distributor: other, vault: otherVault, mint })], [admin]);
     expectErr(res, "MintNotReRootable");
   });
 });

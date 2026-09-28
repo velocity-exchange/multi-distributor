@@ -53,4 +53,6 @@ pub enum ErrorCode {
     RootMismatch,
     #[msg("New max_total_claim cannot exceed the current one")]
     MaxTotalClaimIncrease,
+    #[msg("Distributor num_nodes_claimed does not match the expected count")]
+    ClaimCountMismatch,
 }

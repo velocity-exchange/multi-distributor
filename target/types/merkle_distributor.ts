@@ -343,6 +343,10 @@ export type MerkleDistributor = {
           }
         },
         {
+          "name": "expectedNumNodesClaimed",
+          "type": "u64"
+        },
+        {
           "name": "newMaxTotalClaim",
           "type": "u64"
         }
@@ -1093,6 +1097,11 @@ export type MerkleDistributor = {
       "code": 6024,
       "name": "MaxTotalClaimIncrease",
       "msg": "New max_total_claim cannot exceed the current one"
+    },
+    {
+      "code": 6025,
+      "name": "ClaimCountMismatch",
+      "msg": "Distributor num_nodes_claimed does not match the expected count"
     }
   ]
 };
@@ -1442,6 +1451,10 @@ export const IDL: MerkleDistributor = {
           }
         },
         {
+          "name": "expectedNumNodesClaimed",
+          "type": "u64"
+        },
+        {
           "name": "newMaxTotalClaim",
           "type": "u64"
         }
@@ -2192,6 +2205,11 @@ export const IDL: MerkleDistributor = {
       "code": 6024,
       "name": "MaxTotalClaimIncrease",
       "msg": "New max_total_claim cannot exceed the current one"
+    },
+    {
+      "code": 6025,
+      "name": "ClaimCountMismatch",
+      "msg": "Distributor num_nodes_claimed does not match the expected count"
     }
   ]
 };

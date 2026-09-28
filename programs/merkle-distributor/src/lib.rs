@@ -104,9 +104,16 @@ pub mod merkle_distributor {
         ctx: Context<SetRoot>,
         new_root: [u8; 32],
         expected_old_root: [u8; 32],
+        expected_num_nodes_claimed: u64,
         new_max_total_claim: u64,
     ) -> Result<()> {
-        handle_set_root(ctx, new_root, expected_old_root, new_max_total_claim)
+        handle_set_root(
+            ctx,
+            new_root,
+            expected_old_root,
+            expected_num_nodes_claimed,
+            new_max_total_claim,
+        )
     }
 
     #[allow(clippy::result_large_err)]
