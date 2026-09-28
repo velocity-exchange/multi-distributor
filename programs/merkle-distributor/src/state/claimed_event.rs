@@ -19,3 +19,14 @@ pub struct ClaimedEvent {
     /// Amount of tokens to distribute.
     pub amount: u64,
 }
+
+/// Emitted when a DFX distributor's root is replaced and the excess burned.
+#[event]
+pub struct SetRootEvent {
+    pub distributor: Pubkey,
+    pub old_root: [u8; 32],
+    pub new_root: [u8; 32],
+    pub old_max_total_claim: u64,
+    pub new_max_total_claim: u64,
+    pub burned: u64,
+}

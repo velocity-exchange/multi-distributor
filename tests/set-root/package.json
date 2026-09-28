@@ -1,0 +1,13 @@
+{
+  "name": "set-root-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "0.4.9",
+    "@solana/web3.js": "1.98.4",
+    "litesvm": "0.3.3"
+  }
+}
