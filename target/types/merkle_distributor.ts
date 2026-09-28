@@ -615,6 +615,33 @@ export type MerkleDistributor = {
       "args": []
     },
     {
+      "name": "setClawbackStartTs",
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [MerkleDistributor]."
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Admin signer"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "clawbackStartTs",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "setAdmin",
       "accounts": [
         {
@@ -1721,6 +1748,33 @@ export const IDL: MerkleDistributor = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "setClawbackStartTs",
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [MerkleDistributor]."
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Admin signer"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "clawbackStartTs",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "setAdmin",
