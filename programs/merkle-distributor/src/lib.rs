@@ -98,6 +98,17 @@ pub mod merkle_distributor {
         handle_set_enable_slot(ctx, enable_slot)
     }
 
+    /// Re-roots a paused DFX distributor to a smaller allocation and burns the difference.
+    #[allow(clippy::result_large_err)]
+    pub fn set_root(
+        ctx: Context<SetRoot>,
+        new_root: [u8; 32],
+        expected_old_root: [u8; 32],
+        new_max_total_claim: u64,
+    ) -> Result<()> {
+        handle_set_root(ctx, new_root, expected_old_root, new_max_total_claim)
+    }
+
     #[allow(clippy::result_large_err)]
     pub fn new_claim(
         ctx: Context<NewClaim>,

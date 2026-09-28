@@ -45,4 +45,12 @@ pub enum ErrorCode {
     CannotCloseDistributor,
     #[msg("Cannot close claim status")]
     CannotCloseClaimStatus,
+    #[msg("Only DFX distributors can be re-rooted")]
+    MintNotReRootable,
+    #[msg("Claims must be paused (enable_slot = u64::MAX)")]
+    DistributorNotPaused,
+    #[msg("Distributor root does not match the expected old root")]
+    RootMismatch,
+    #[msg("New max_total_claim cannot exceed the current one")]
+    MaxTotalClaimIncrease,
 }

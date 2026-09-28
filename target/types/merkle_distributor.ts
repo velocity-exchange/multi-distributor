@@ -277,6 +277,78 @@ export type MerkleDistributor = {
       ]
     },
     {
+      "name": "setRoot",
+      "docs": [
+        "Re-roots a paused DFX distributor to a smaller allocation and burns the difference."
+      ],
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [MerkleDistributor]."
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Distributor ATA holding the unclaimed tokens."
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The distributor's mint, burned from."
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Admin signer"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL [Token] program."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "expectedOldRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "newMaxTotalClaim",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "newClaim",
       "accounts": [
         {
@@ -849,6 +921,51 @@ export type MerkleDistributor = {
           "index": false
         }
       ]
+    },
+    {
+      "name": "SetRootEvent",
+      "fields": [
+        {
+          "name": "distributor",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "oldRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          },
+          "index": false
+        },
+        {
+          "name": "newRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          },
+          "index": false
+        },
+        {
+          "name": "oldMaxTotalClaim",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "newMaxTotalClaim",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "burned",
+          "type": "u64",
+          "index": false
+        }
+      ]
     }
   ],
   "errors": [
@@ -956,6 +1073,26 @@ export type MerkleDistributor = {
       "code": 6020,
       "name": "CannotCloseClaimStatus",
       "msg": "Cannot close claim status"
+    },
+    {
+      "code": 6021,
+      "name": "MintNotReRootable",
+      "msg": "Only DFX distributors can be re-rooted"
+    },
+    {
+      "code": 6022,
+      "name": "DistributorNotPaused",
+      "msg": "Claims must be paused (enable_slot = u64::MAX)"
+    },
+    {
+      "code": 6023,
+      "name": "RootMismatch",
+      "msg": "Distributor root does not match the expected old root"
+    },
+    {
+      "code": 6024,
+      "name": "MaxTotalClaimIncrease",
+      "msg": "New max_total_claim cannot exceed the current one"
     }
   ]
 };
@@ -1239,6 +1376,78 @@ export const IDL: MerkleDistributor = {
       ]
     },
     {
+      "name": "setRoot",
+      "docs": [
+        "Re-roots a paused DFX distributor to a smaller allocation and burns the difference."
+      ],
+      "accounts": [
+        {
+          "name": "distributor",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The [MerkleDistributor]."
+          ]
+        },
+        {
+          "name": "tokenVault",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Distributor ATA holding the unclaimed tokens."
+          ]
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "The distributor's mint, burned from."
+          ]
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true,
+          "docs": [
+            "Admin signer"
+          ]
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "SPL [Token] program."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "newRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "expectedOldRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "newMaxTotalClaim",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "newClaim",
       "accounts": [
         {
@@ -1811,6 +2020,51 @@ export const IDL: MerkleDistributor = {
           "index": false
         }
       ]
+    },
+    {
+      "name": "SetRootEvent",
+      "fields": [
+        {
+          "name": "distributor",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "oldRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          },
+          "index": false
+        },
+        {
+          "name": "newRoot",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          },
+          "index": false
+        },
+        {
+          "name": "oldMaxTotalClaim",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "newMaxTotalClaim",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "burned",
+          "type": "u64",
+          "index": false
+        }
+      ]
     }
   ],
   "errors": [
@@ -1918,6 +2172,26 @@ export const IDL: MerkleDistributor = {
       "code": 6020,
       "name": "CannotCloseClaimStatus",
       "msg": "Cannot close claim status"
+    },
+    {
+      "code": 6021,
+      "name": "MintNotReRootable",
+      "msg": "Only DFX distributors can be re-rooted"
+    },
+    {
+      "code": 6022,
+      "name": "DistributorNotPaused",
+      "msg": "Claims must be paused (enable_slot = u64::MAX)"
+    },
+    {
+      "code": 6023,
+      "name": "RootMismatch",
+      "msg": "Distributor root does not match the expected old root"
+    },
+    {
+      "code": 6024,
+      "name": "MaxTotalClaimIncrease",
+      "msg": "New max_total_claim cannot exceed the current one"
     }
   ]
 };
