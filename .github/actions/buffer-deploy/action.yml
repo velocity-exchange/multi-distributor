@@ -163,7 +163,9 @@ runs:
           echo "| local verifiable .so hash | \`${LOCAL_HASH:-<unavailable>}\` |"
           echo "| verification | ${VERDICT} |"
           echo ""
-          echo "Signers can reproduce: \`solana-verify verify-from-repo --base-image solanafoundation/solana-verifiable-build:${SOLANA_VERSION} --arch v3\` for this commit."
+          echo "Signers can reproduce at this commit, then compare with the buffer hash:"
+          echo ""
+          echo "\`solana-verify build --base-image solanafoundation/solana-verifiable-build:${SOLANA_VERSION} --library-name ${PROGRAM} --arch v3 && solana-verify get-executable-hash target/deploy/${PROGRAM}.so\`"
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Remove deployer keypair
