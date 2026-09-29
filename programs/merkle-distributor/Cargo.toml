@@ -18,11 +18,12 @@ default = ["devnet"]
 devnet = []
 mainnet-beta = []
 anchor-debug = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = "0.28.0"
-anchor-spl = "0.28.0"
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
 bytemuck = "1.14.0"
 jito-merkle-verify = { path = "../../verify" }
-solana-program = "1.16.16"
+solana-program = { workspace = true }
 solana-security-txt = "1.1.1"
