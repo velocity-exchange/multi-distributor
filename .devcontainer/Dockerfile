@@ -3,8 +3,11 @@
 #
 FROM --platform=linux/amd64 ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
-ARG SOLANA_CLI="1.16.16"
-ARG ANCHOR_CLI="0.28.0"
+ARG SOLANA_CLI="4.3.0"
+ARG ANCHOR_CLI="0.31.2"
+ARG RUST_VERSION="1.89.0"
+# anchor idl build needs nightly; keep in sync with IDL_NIGHTLY in CI.
+ARG IDL_NIGHTLY="nightly-2026-07-25"
 ARG NODE_VERSION="20.18.1"
 ENV HOME="/root"
 ENV PATH="/usr/local/cargo/bin:${PATH}"
@@ -18,9 +21,10 @@ RUN mkdir -p /workdir /tmp \
     libssl-dev libudev-dev bash software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.70.0 \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain "${RUST_VERSION}" \
     && . "$HOME/.cargo/env" \
-    && rustup component add rustfmt clippy rust-analyzer
+    && rustup component add rustfmt clippy rust-analyzer \
+    && rustup toolchain install "${IDL_NIGHTLY}" --profile minimal
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" -o /tmp/node.tar.xz \
@@ -30,12 +34,12 @@ RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-l
     && npm install -g ts-mocha typescript mocha \
     && node -v && npm -v && yarn -v
 
-RUN curl -sSfL "https://github.com/solana-labs/solana/releases/download/v${SOLANA_CLI}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" \
-    | tar -xjC /tmp \
-    && mv /tmp/solana-release/bin/* /usr/local/bin/ \
-    && rm -rf /tmp/solana-release
+RUN sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_CLI}/install)"
 
-RUN cargo install --git https://github.com/coral-xyz/anchor --tag "v${ANCHOR_CLI}" anchor-cli --locked
+RUN curl -sSfL "https://github.com/solana-foundation/anchor/releases/download/v${ANCHOR_CLI}/anchor-${ANCHOR_CLI}-x86_64-unknown-linux-gnu" \
+    -o /usr/local/bin/anchor \
+    && chmod +x /usr/local/bin/anchor \
+    && anchor --version
 
 RUN solana-keygen new --no-bip39-passphrase --force \
     && solana config set --url localhost
