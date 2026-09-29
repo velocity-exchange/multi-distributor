@@ -1,13 +1,12 @@
 name: "Buffer Deploy (program + IDL → Squads)"
 description: >
-  Stages a Squads-governed program + IDL upgrade for an Anchor 0.28 program.
+  Stages a Squads-governed program + IDL upgrade for an Anchor program.
 
     1. Writes target/deploy/<program>.so to a BPF Upgradeable Loader buffer and
        transfers the buffer authority to the Squads vault.
     2. Writes target/idl/<program>.json to an Anchor IDL buffer (`anchor idl
-       write-buffer` — the native, non-program-metadata path; Anchor 0.28 has no
-       `--priority-fee`, so it's omitted) and transfers THAT buffer's authority to
-       the Squads vault with `anchor idl set-authority`.
+       write-buffer` — the native, non-program-metadata path) and transfers THAT
+       buffer's authority to the Squads vault with `anchor idl set-authority`.
     3. Prints the local verifiable .so hash next to the on-chain buffer hash so a
        multisig signer can confirm the staged program before approving.
 
@@ -87,8 +86,8 @@ runs:
         echo "buffer=$BUFFER" >> "$GITHUB_OUTPUT"
 
         # --- 2. Anchor IDL buffer (native, non-program-metadata) ------------
-        # 0.28 idl write-buffer: positional program-id + --filepath. No --priority-fee.
-        echo "==> Creating IDL buffer (anchor 0.28)"
+        # idl write-buffer: positional program-id + --filepath.
+        echo "==> Creating IDL buffer"
         IDL_OUT="$(anchor idl write-buffer "$PROGRAM_ID" \
           --filepath "target/idl/${PROGRAM}.json" \
           --provider.cluster "$RPC_URL" \
@@ -102,7 +101,7 @@ runs:
         fi
         echo "    idl buffer: $IDL_BUFFER"
 
-        # 0.28 idl set-authority: the buffer is a POSITIONAL arg (no --buffer flag);
+        # idl set-authority: the buffer is a POSITIONAL arg (no --buffer flag);
         # --program-id and --new-authority are required. This hands the IDL buffer
         # to the vault so the multisig's set-buffer (idl account is already vault-
         # owned) can consume it.
@@ -164,7 +163,7 @@ runs:
           echo "| local verifiable .so hash | \`${LOCAL_HASH:-<unavailable>}\` |"
           echo "| verification | ${VERDICT} |"
           echo ""
-          echo "Signers can reproduce: \`solana-verify verify-from-repo --base-image solanafoundation/solana-verifiable-build:1.16.16\` for this commit."
+          echo "Signers can reproduce: \`solana-verify verify-from-repo --base-image solanafoundation/solana-verifiable-build:${SOLANA_VERSION} --arch v3\` for this commit."
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Remove deployer keypair

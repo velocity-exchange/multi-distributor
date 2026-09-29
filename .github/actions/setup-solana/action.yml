@@ -1,12 +1,8 @@
 name: "Setup Solana (agave)"
 description: >
   Install the Solana CLI (SOLANA_VERSION) via the official release.anza.xyz
-  installer, plus a throwaway default identity. We use the official installer
-  (not a raw tarball) so `agave-install` is registered: avm auto-resolves the
-  matching Solana for the Anchor toolchain and manages it through agave-install,
-  so the version installed here must equal what avm resolves (1.18.26 — the max
-  satisfying the program's `^1.16` solana-program dep) to avoid an activation
-  clash. Anchor 0.28 builds fine under Solana 1.18.
+  installer, plus a throwaway default identity. Used for buffer writes and
+  authority transfers; the program itself is built inside solana-verify's image.
 runs:
   using: "composite"
   steps:

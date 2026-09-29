@@ -18,11 +18,12 @@ permissions:
   contents: read
 
 env:
-  RUST_TOOLCHAIN: "1.70.0"
-  # Solana the Anchor 0.28 toolchain resolves (max satisfying solana-program ^1.16);
-  # avm installs it via agave-install, so setup-solana installs the same version.
-  SOLANA_VERSION: "1.18.26"
-  ANCHOR_VERSION: "0.28.0"
+  RUST_TOOLCHAIN: "1.89.0"
+  # Anchor 0.31 `idl build` needs nightly; pinned so the IDL is reproducible.
+  IDL_NIGHTLY: "nightly-2026-07-25"
+  # 4.3.0 ships the compiler that emits SBPF v3 (required by SIMD-0500).
+  SOLANA_VERSION: "4.3.0"
+  ANCHOR_VERSION: "0.31.2"
   DISTRIBUTOR_PROGRAM_ID: distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
 
 jobs:
