@@ -51,16 +51,16 @@ merkle-distributor = { git = "https://github.com/drift-labs/multi-distributor", 
 
 ## Build
 
-Requires the same toolchain as the rest of this repo (anchor CLI 0.28.x, solana 1.16+ CLI
-tooling, rustc pinned by the repo's `rust-toolchain.toml`).
+Requires the same toolchain as the rest of this repo (anchor CLI 0.31.x, Solana 4.3+ CLI
+tooling, rustc pinned by the repo's `rust-toolchain.toml`). `--arch v3` builds SBPF v3.
 
 ```sh
 # 1. build the distributor (produces target/deploy/merkle_distributor.so for the tests)
-anchor build          # at the repo root
+anchor build -- --arch v3   # at the repo root
 
 # 2. build this example
 cd cpi-example
-anchor build
+anchor build -- --arch v3
 ```
 
 ## Test (litesvm)

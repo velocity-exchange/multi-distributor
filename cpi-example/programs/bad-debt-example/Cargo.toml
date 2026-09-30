@@ -13,13 +13,17 @@ no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "merkle-distributor/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+no-log-ix-name = []
 
 [dependencies]
-anchor-lang = "0.28.0"
-anchor-spl = "0.28.0"
+anchor-lang = "0.31.2"
+anchor-spl = "0.31.2"
 # When adapting this example in your own repo, replace the path dependency with:
 # merkle-distributor = { git = "https://github.com/drift-labs/multi-distributor", features = ["cpi"] }
 merkle-distributor = { path = "../../../programs/merkle-distributor", features = ["cpi"] }
-# Match the version the distributor program was built against (kept exact via Cargo.lock,
-# see `cargo update -p solana-program --precise 1.16.16`).
-solana-program = "1.16.16"
+# Match the major version the distributor program is built against.
+solana-program = "2.3"

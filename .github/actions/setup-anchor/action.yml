@@ -1,13 +1,7 @@
-name: "Setup Anchor CLI (0.28)"
+name: "Setup Anchor CLI"
 description: >
-  Install the Anchor CLI pinned by ANCHOR_VERSION (0.28.0) via avm and cache it.
-  We use avm rather than `cargo install anchor-cli` because anchor 0.28 cannot be
-  built fresh on a modern runner (its Cargo.lock pins wasm-bindgen 0.2.86 which
-  new Rust rejects, and unlocked it needs the fully-yanked cargo_toml ^0.13); avm
-  builds the otter-sec 0.28 fork against a self-consistent lockfile that compiles.
-  avm auto-installs the matching Solana via agave-install — setup-solana must run
-  first and install that exact version so there's no activation clash. avm itself
-  is built with `+stable` (the repo's 1.70 is too old for it).
+  Install the Anchor CLI pinned by ANCHOR_VERSION via avm (which downloads the
+  prebuilt release binary) and cache it. avm itself is built with `+stable`.
 runs:
   using: "composite"
   steps:
@@ -26,7 +20,7 @@ runs:
         if ! command -v avm >/dev/null 2>&1; then
           sudo apt-get update -y
           sudo apt-get install -y libudev-dev pkg-config build-essential
-          # `+stable` overrides the repo's rust-toolchain.toml (1.70) for this build.
+          # `+stable` overrides the repo's rust-toolchain.toml for this build.
           cargo +stable install --git https://github.com/coral-xyz/anchor avm --locked --force
         fi
         avm install "${ANCHOR_VERSION}"

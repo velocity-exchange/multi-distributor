@@ -453,6 +453,7 @@ impl Cache {
                     min_context_slot: None,
                 },
                 with_context: Some(true),
+                sort_results: None,
             };
 
             println!("Starting up background updater for {}", distributor);

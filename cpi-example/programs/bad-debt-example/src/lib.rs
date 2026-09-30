@@ -28,7 +28,7 @@ pub mod bad_debt_example {
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         let config = &mut ctx.accounts.config;
         config.admin = ctx.accounts.admin.key();
-        config.bump = *ctx.bumps.get("config").unwrap();
+        config.bump = ctx.bumps.config;
         Ok(())
     }
 
@@ -60,7 +60,7 @@ pub mod bad_debt_example {
             )?;
         }
 
-        let bump = *ctx.bumps.get("bad_debt_authority").unwrap();
+        let bump = ctx.bumps.bad_debt_authority;
         let signer_seeds: &[&[u8]] = &[BAD_DEBT_SEED, &[bump]];
         merkle_distributor::cpi::new_claim(
             CpiContext::new_with_signer(
@@ -91,7 +91,7 @@ pub mod bad_debt_example {
         } else {
             amount
         };
-        let bump = *ctx.bumps.get("bad_debt_authority").unwrap();
+        let bump = ctx.bumps.bad_debt_authority;
         let signer_seeds: &[&[u8]] = &[BAD_DEBT_SEED, &[bump]];
         token::transfer(
             CpiContext::new_with_signer(

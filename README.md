@@ -122,12 +122,12 @@ Common commands:
 
 ```sh
 # build program without requiring the deploy keypair
-anchor build
+anchor build -- --arch v3
 
 # build program with keypair check
 mkdir -p target/deploy
 cp /path/to/merkle_distributor-keypair.json target/deploy/merkle_distributor-keypair.json
-anchor build
+anchor build -- --arch v3
 
 # update checked-in IDL after build
 cp target/idl/merkle_distributor.json programs/merkle-distributor/idl/merkle_distributor.json
