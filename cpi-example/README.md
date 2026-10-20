@@ -46,7 +46,7 @@ dependency on the distributor crate:
 
 ```toml
 # in your repo, use the git dependency instead of the path:
-merkle-distributor = { git = "https://github.com/drift-labs/multi-distributor", features = ["cpi"] }
+merkle-distributor = { git = "https://github.com/velocity-exchange/multi-distributor", features = ["cpi"] }
 ```
 
 ## Build
