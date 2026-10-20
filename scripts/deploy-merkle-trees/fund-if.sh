@@ -95,6 +95,7 @@ echo
 
 OK=()
 FAIL=()
+SKIPPED=()
 
 for ((i = 0; i < NUM_MARKETS; i++)); do
   index="$(jq -r ".markets[$i].index" "$CONFIG")"
@@ -120,6 +121,12 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   label="${index}-${symbol}"
   tree_dir="${TREES_DIR}/${label}"
 
+  # Skip markets deferred via config exclude_markets (no distributor to fund).
+  if market_excluded "$index"; then
+    echo "==> [${label}] skipped (excluded in config)"
+    SKIPPED+=("$label"); echo; continue
+  fi
+
   if fund_market "$mint" "$tree_dir" "$label"; then
     OK+=("$label")
   else
@@ -130,5 +137,6 @@ done
 
 echo "==> Summary"
 echo "    succeeded (${#OK[@]}): ${OK[*]:-<none>}"
+echo "    skipped   (${#SKIPPED[@]}): ${SKIPPED[*]:-<none>}"
 echo "    failed    (${#FAIL[@]}): ${FAIL[*]:-<none>}"
 [[ ${#FAIL[@]} -eq 0 ]] || exit 1

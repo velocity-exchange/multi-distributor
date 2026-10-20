@@ -562,11 +562,24 @@ fn check_distributor_onchain_matches(
             return Err("max_num_nodes mismatch");
         }
 
+        // start_ts/end_ts are NOT fund-safety critical: there is no vesting
+        // (end_ts is always start_ts + 1 and locked amounts are 0), so the exact
+        // claim-open timestamp is immaterial as long as it's set. An existing
+        // distributor created with a slightly different start_vesting_ts (e.g.
+        // the config value was bumped between runs) must not abort an otherwise
+        // idempotent re-run, so warn instead of erroring and keep its on-chain
+        // value. All fund-affecting fields below remain hard errors.
         if distributor.start_ts != new_distributor_args.start_vesting_ts {
-            return Err("start_ts mismatch");
+            eprintln!(
+                "WARNING: start_ts mismatch (on-chain {} vs config {}); keeping on-chain value (no vesting, immaterial)",
+                distributor.start_ts, new_distributor_args.start_vesting_ts
+            );
         }
         if distributor.end_ts != new_distributor_args.end_vesting_ts {
-            return Err("end_ts mismatch");
+            eprintln!(
+                "WARNING: end_ts mismatch (on-chain {} vs config {}); keeping on-chain value (no vesting, immaterial)",
+                distributor.end_ts, new_distributor_args.end_vesting_ts
+            );
         }
         if distributor.clawback_start_ts != new_distributor_args.clawback_start_ts {
             return Err("clawback_start_ts mismatch");

@@ -94,6 +94,7 @@ echo
 
 OK=()
 FAIL=()
+SKIPPED=()
 
 for ((i = 0; i < NUM_MARKETS; i++)); do
   index="$(jq -r ".markets[$i].index" "$CONFIG")"
@@ -120,6 +121,17 @@ for ((i = 0; i < NUM_MARKETS; i++)); do
   csv_path="${CSV_DIR}/${label}.csv"
   tree_dir="${TREES_DIR}/${label}"
 
+  # Markets deferred via config exclude_markets (e.g. Token-2022 mints).
+  if market_excluded "$index"; then
+    echo "==> [${label}] skipped (excluded in config)"
+    SKIPPED+=("$label"); echo; continue
+  fi
+  # 0-claim markets: skip rather than overflow create-merkle-tree on 0 nodes.
+  if [[ -f "$csv_path" ]] && ! csv_has_claims "$csv_path"; then
+    echo "==> [${label}] skipped (empty CSV, 0 claims)"
+    SKIPPED+=("$label"); echo; continue
+  fi
+
   if deploy_market "$mint" "$csv_path" "$tree_dir" "$label"; then
     OK+=("$label")
   else
@@ -130,5 +142,6 @@ done
 
 echo "==> Summary"
 echo "    succeeded (${#OK[@]}): ${OK[*]:-<none>}"
+echo "    skipped   (${#SKIPPED[@]}): ${SKIPPED[*]:-<none>}"
 echo "    failed    (${#FAIL[@]}): ${FAIL[*]:-<none>}"
 [[ ${#FAIL[@]} -eq 0 ]] || exit 1

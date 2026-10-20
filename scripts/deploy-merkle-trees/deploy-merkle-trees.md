@@ -15,6 +15,13 @@ helper so the CLI-call sequence never drifts:
 - [`deploy-dfx.sh`](./deploy-dfx.sh) — the single DFX IOU mint.
 - [`fund-if.sh`](./fund-if.sh) / [`fund-dfx.sh`](./fund-dfx.sh) — fund the
   distributor vaults created by the matching deploy script.
+- [`set-authorities-if.sh`](./set-authorities-if.sh) — hand the IF distributors
+  over to the multisig: set every distributor's `clawback_receiver` and `admin`
+  to the multisig vault. Signed by the current admin; the last step after
+  deploy → fund → verify (see "set-authorities-if.sh" below).
+- [`msig-fund/`](./msig-fund/) — fund IF vaults when the tokens live in a Squads
+  V4 multisig: builds the same transfers as `fund-if.sh` but submits them as a
+  multisig proposal instead of signing directly (see its `README.md`).
 - [`deploy-common.sh`](./deploy-common.sh) — sourced by all; holds preflight
   checks, the `cli` path resolver, jq config readers, and the shared
   `deploy_market()` and `fund_market()` functions.
@@ -179,8 +186,20 @@ cli aggregate-if-csvs \
 
 It first aggregates same-mint markets (see "Same-mint markets"), then iterates
 the merged `markets[]` (one entry per unique mint), calls `deploy_market` per
-mint, and prints a final per-mint success/fail summary (non-zero exit if any
-failed).
+mint, and prints a final per-mint succeeded/skipped/failed summary (non-zero
+exit if any failed).
+
+**Skipped markets.** Two kinds of market are skipped (and reported under
+`skipped`, not `failed`), uniformly across `deploy-if.sh`, `fund-if.sh`, and
+`set-authorities-if.sh`:
+
+- **`exclude_markets`** — an optional top-level array of market indices in the
+  config. Use it to defer markets the program can't handle yet — notably
+  **Token-2022 mints** (this program is classic SPL Token only: the CLI creates
+  vaults with `spl_token::ID` and `new_distributor` takes `Program<Token>`, so a
+  Token-2022 mint fails at distributor creation). Empty the array to re-include.
+- **Empty CSVs (0 claims)** — skipped automatically, since `create-merkle-tree`
+  underflows on a 0-node tree. No config needed.
 
 ## deploy-dfx.sh
 
@@ -227,6 +246,41 @@ missing — `--csv-dir` covers that case).
 idempotent (it tops up to the remaining unclaimed entitlement — see "Scope"),
 re-running after a partial failure only funds the still-unfunded vaults, and
 re-running after claiming has begun does not over-fund.
+
+## set-authorities-if.sh
+
+The final step: hand the IF distributors over to the multisig. For each market
+it sets `clawback_receiver` then `admin` to the multisig vault (both default to
+`8jj7zJgdr5bDndc7evM74FMGwzLPmd4u4QxNzFi1BMai`). It is signed by the **current**
+admin (`config.keypair_path`) — this is the one-way handover after which only
+the multisig can administer the distributors (use `msig-fund/` from then on).
+
+```bash
+./scripts/deploy-merkle-trees/set-authorities-if.sh \
+  --config scripts/deploy-merkle-trees/if-markets.mainnet.json --dry-run   # preview
+```
+
+Ordering is enforced and matters:
+
+1. **Clawback receivers first** (across every selected market). The on-chain
+   `clawback_receiver` is `ATA(owner, mint)`; the ATA is created here (idempotently)
+   if it doesn't exist yet. `set_clawback_receiver` needs the current admin to sign.
+2. **Admins last.** Only after every clawback receiver is set does it begin handing
+   over admin, so an interrupted run never strands a market with its admin moved
+   but its clawback receiver unset. If any clawback step fails, it aborts before
+   touching any admin.
+
+| Flag                  | Notes                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `--config`            | Same config as deploy/fund. Reuses `<csv-dir>/processed/merged-config.json`.                |
+| `--admin`             | New admin pubkey (default the multisig vault).                                              |
+| `--clawback-receiver` | Clawback receiver **owner**; on-chain receiver is `ATA(owner, mint)` (default same vault).  |
+| `--market <symbol>` / `--index <n>` | Restrict to a single market (e.g. test on `mSOL` first). Mutually exclusive.  |
+| `--start-index N`     | Skip markets with `index < N` to resume an interrupted run.                                 |
+| `--dry-run`           | Print the `spl-token` / `set-clawback-receiver` / `set-admin` commands instead of running.  |
+
+Both `set-admin` and `set-clawback-receiver` are idempotent (the cli skips a
+distributor already pointing at the target), so re-running is safe.
 
 ## Dry-run
 
