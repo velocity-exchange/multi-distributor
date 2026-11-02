@@ -1,0 +1,27 @@
+[package]
+name = "token-burner"
+version = "0.0.1"
+description = "Burns every token held by its PDA. Anyone can call it."
+edition = "2021"
+license = "GPL-3.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "token_burner"
+path = "src/lib.rs"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+solana-security-txt = "1.1.1"
