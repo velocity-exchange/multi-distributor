@@ -6,15 +6,19 @@ skip-lint = false
 
 [programs.devnet]
 merkle_distributor = "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp"
+token_burner = "burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW"
 
 [programs.localnet]
 merkle_distributor = "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp"
+token_burner = "burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW"
 
 [programs.mainnet]
 merkle_distributor = "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp"
+token_burner = "burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW"
 
 [programs.testnet]
 merkle_distributor = "distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp"
+token_burner = "burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW"
 
 [registry]
 url = "https://api.apr.dev"
@@ -24,7 +28,7 @@ cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [workspace]
-members = ["programs/merkle-distributor"]
+members = ["programs/merkle-distributor", "programs/token-burner"]
 
 [scripts]
 test = "yarn mocha"
