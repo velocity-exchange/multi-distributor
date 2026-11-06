@@ -1,6 +1,8 @@
 name: Release Program to Mainnet
 
-# Mainnet program upgrades are gated by a `program-distributor-<version>` tag.
+# Mainnet program upgrades are gated by a tag. The tag prefix selects the program:
+#   program-distributor-<version>   -> merkle_distributor
+#   program-token-burner-<version>  -> token_burner
 # The workflow only PROPOSES the Squads transaction; multisig signers must
 # approve + execute it via the Squads UI. The IDL is published by the
 # buffer-deploy action via Anchor's native idl commands.
@@ -9,18 +11,18 @@ on:
   push:
     tags:
       - "program-distributor-*"
+      - "program-token-burner-*"
 
 permissions:
   contents: read
 
 env:
-  # Anchor 0.31 `idl build` needs nightly; pinned so the IDL is reproducible.
-  IDL_NIGHTLY: "nightly-2026-07-25"
   # 4.3.0 ships the compiler that emits SBPF v3 (required by SIMD-0500).
   SOLANA_VERSION: "4.3.0"
   ANCHOR_VERSION: "0.31.2"
-  # merkle_distributor program ID (same on devnet + mainnet — see Anchor.toml).
+  # Program IDs are the same on devnet and mainnet. See Anchor.toml.
   DISTRIBUTOR_PROGRAM_ID: distAitdwx9mDm3SaPMtGZRjpXMPUenLhmPwoySV3Hp
+  TOKEN_BURNER_PROGRAM_ID: burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW
 
 jobs:
   release:
@@ -35,24 +37,39 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="$(echo "$TAG" | sed 's/^program-distributor-//')"
-          if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG" ]; then
-            echo "Tag '$TAG' does not match program-distributor-<version>" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          case "$TAG" in
+            program-distributor-?*)
+              PROGRAM=merkle_distributor
+              PROGRAM_ID="$DISTRIBUTOR_PROGRAM_ID"
+              VERSION="${TAG#program-distributor-}"
+              ;;
+            program-token-burner-?*)
+              PROGRAM=token_burner
+              PROGRAM_ID="$TOKEN_BURNER_PROGRAM_ID"
+              VERSION="${TAG#program-token-burner-}"
+              ;;
+            *)
+              echo "Tag '$TAG' does not match program-distributor-<version> or program-token-burner-<version>" >&2
+              exit 1
+              ;;
+          esac
+          {
+            echo "program=$PROGRAM"
+            echo "program-id=$PROGRAM_ID"
+            echo "version=$VERSION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build (verifiable .so + IDL)
         uses: ./.github/actions/build-program/
         with:
-          program: merkle_distributor
+          program: ${{ steps.tag.outputs.program }}
 
       - name: Buffer deploy (mainnet)
         id: buffer-deploy
         uses: ./.github/actions/buffer-deploy/
         with:
-          program: merkle_distributor
-          program-id: ${{ env.DISTRIBUTOR_PROGRAM_ID }}
+          program: ${{ steps.tag.outputs.program }}
+          program-id: ${{ steps.tag.outputs.program-id }}
           rpc-url: ${{ secrets.MAINNET_RPC_ENDPOINT }}
           keypair: ${{ secrets.MAINNET_DEPLOYER_KEYPAIR }}
           buffer-authority: ${{ vars.MAINNET_MULTISIG_VAULT }}
@@ -61,7 +78,7 @@ jobs:
         uses: solana-foundation/squads-program-action@839c079c881344c2da0365ad6a6bb07892e08e2f # v0.4.3
         with:
           rpc: ${{ secrets.MAINNET_RPC_ENDPOINT }}
-          program: ${{ env.DISTRIBUTOR_PROGRAM_ID }}
+          program: ${{ steps.tag.outputs.program-id }}
           multisig: ${{ vars.MAINNET_MULTISIG }}
           vault-index: "0"
           buffer: ${{ steps.buffer-deploy.outputs.buffer }}

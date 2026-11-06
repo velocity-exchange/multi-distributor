@@ -4,7 +4,7 @@
 //! remove: `burn`, which anyone can call. The DFX distributors use such an account as
 //! their clawback receiver, so a permissionless clawback followed by `burn` reduces supply.
 //!
-//! The program has no admin and no state. Deploy it without an upgrade authority.
+//! The program has no admin and no state.
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{self, Burn, Mint, TokenAccount, TokenInterface};
