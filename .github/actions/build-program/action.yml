@@ -1,6 +1,6 @@
 name: "Build Program (solana-verify + IDL)"
 description: >
-  Builds `merkle_distributor.so` as SBPF v3 with `solana-verify build` — the SAME
+  Builds `<program>.so` as SBPF v3 with `solana-verify build` — the SAME
   tool + image (solanafoundation/solana-verifiable-build:SOLANA_VERSION) that
   `solana-verify verify-from-repo` and explorers use.
   This is what makes the deployed program verifiable: its on-chain hash will match
@@ -56,10 +56,11 @@ runs:
           echo "Expected SBPF v3, got e_flags=${SBPF_VERSION}" >&2
           exit 1
         fi
-        # anchor idl build needs nightly; RUSTUP_TOOLCHAIN pins which one.
-        rustup toolchain install "$IDL_NIGHTLY" --profile minimal --no-self-update
+        # The IDL builds on the rust-toolchain.toml toolchain. anchor-lang-idl 0.1.4
+        # passes a literal `+{toolchain}` to cargo when RUSTUP_TOOLCHAIN is set.
+        rustup toolchain install --profile minimal --no-self-update
         mkdir -p target/idl
-        RUSTUP_TOOLCHAIN="$IDL_NIGHTLY" anchor idl build -p "$PROGRAM" \
+        anchor idl build -p "$PROGRAM" \
           -o "target/idl/${PROGRAM}.json"
         ls -l "target/deploy/${PROGRAM}.so" "target/idl/${PROGRAM}.json"
 

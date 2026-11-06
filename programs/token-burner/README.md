@@ -22,11 +22,7 @@ cd tests/token-burner && bun install && bun test
 
 ## Rollout
 
-1. Deploy a verifiable build. Then remove the upgrade authority, so nobody can change what `burn` does:
-
-   ```sh
-   solana program set-upgrade-authority burnhrRSRkbYBPbVWCVwMUxJMmVPtQqHBCUAVzkJ5tW --final
-   ```
+1. Deploy a verifiable build. Then set the upgrade authority and the IDL authority to the mainnet multisig vault `8jj7zJgdr5bDndc7evM74FMGwzLPmd4u4QxNzFi1BMai`.
 
 2. Create the burner DFX account. Any wallet can pay for it:
 
@@ -40,3 +36,7 @@ cd tests/token-burner && bun install && bun test
 4. After `clawback_start_ts`, send `merkle_distributor::clawback` and `token_burner::burn` in one transaction for each distributor.
 
 The distributor admin can still change `clawback_receiver` and `clawback_start_ts` after step 3. The burn is permissionless to trigger, but the admin can still stop it.
+
+## Upgrades
+
+A `program-token-burner-<version>` tag starts `release-program.yaml`. The workflow writes a verifiable build to a buffer and proposes the upgrade on the mainnet multisig. For devnet, run `manual-devnet-deploy.yaml` with `program: token_burner`.
